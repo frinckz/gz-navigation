@@ -4,3 +4,6 @@
 [submodule "deps/minhook"]
 	path = deps/minhook
 	url = https://github.com/TsudaKageyu/minhook.git
+[submodule "deps/meow-hook"]
+	path = deps/meow-hook
+	url = https://github.com/xforce/meow-hook.git

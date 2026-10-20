@@ -7,7 +7,6 @@
 #include "imgui/ui.h"
 
 #include <iostream>
-#include <__msvc_ostream.hpp>
 #include <imgui.h>
 
 #include "game/animal_network.h"

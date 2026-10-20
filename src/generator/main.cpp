@@ -8,6 +8,9 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <map>
+#include <optional>
+#include <regex>
 #include <string>
 
 #pragma warning(disable : 4477)
@@ -81,6 +84,9 @@ FindPatternResult Generate(const char* name, const char* exepath)
     FindPatternResult result;
 
     std::fstream is(exepath, std::ios::in | std::ios::binary);
+    if (!is) {
+        throw std::runtime_error(std::string("Cannot open game executable: ") + exepath);
+    }
     is.seekg(0, std::ios::end);
     size_t data_size = is.tellg();
     is.seekg(0, std::ios::beg);
@@ -1088,20 +1094,82 @@ void WriteSource(const std::filesystem::path& path, FindPatternResult& steam_add
     stream << "} // namespace gz";
 }
 
+// reads the previously generated addresses.cpp, so the values of a missing game install can be kept
+static std::map<std::string, std::pair<intptr_t, intptr_t>> ReadExisting(const std::filesystem::path& path)
+{
+    std::map<std::string, std::pair<intptr_t, intptr_t>> existing;
+
+    std::ifstream stream(path);
+    std::regex    line_re(R"(g_Address\[(\w+)\] = \(is_steam \? 0x([0-9a-fA-F]+) : 0x([0-9a-fA-F]+)\))");
+    std::string   line;
+    while (std::getline(stream, line)) {
+        std::smatch m;
+        if (std::regex_search(line, m, line_re)) {
+            existing[m[1]] = {std::stoull(m[2], nullptr, 16), std::stoull(m[3], nullptr, 16)};
+        }
+    }
+    return existing;
+}
+
+static std::optional<FindPatternResult> TryGenerate(const char* name, const char* exepath)
+{
+    if (!std::filesystem::exists(exepath)) {
+        std::cout << "Skipping " << name << ": " << exepath << " not found\n";
+        return std::nullopt;
+    }
+    return Generate(name, exepath);
+}
+
 int main()
 {
-    auto steam_addresses = Generate("Steam", R"(C:\Program Files (x86)\Steam\steamapps\common\GenerationZero\GenerationZero_F.exe)");
-    auto xbox_addresses  = Generate("Microsoft Store", R"(C:\XboxGames\Generation Zero\Content\GenerationZero_F.exe)");
-
-    assert(steam_addresses.size() == xbox_addresses.size());
+    std::cout << std::unitbuf;
 
     char tmp[MAX_PATH] = {0};
     GetModuleFileName(nullptr, tmp, sizeof(tmp));
 
     std::filesystem::path path(tmp);
     std::filesystem::path base_path = path.parent_path().parent_path().parent_path().parent_path() / "src";
+
+    std::optional<FindPatternResult> steam, xbox;
+    try {
+        steam = TryGenerate("Steam", R"(C:\Program Files (x86)\Steam\steamapps\common\GenerationZero\GenerationZero_F.exe)");
+        xbox  = TryGenerate("Microsoft Store", R"(C:\XboxGames\Generation Zero\Content\GenerationZero_F.exe)");
+    } catch (const std::exception& e) {
+        std::cout << "ERROR: " << e.what() << "\nNothing written.\n";
+        return 1;
+    }
+
+    if (!steam && !xbox) {
+        std::cout << "ERROR: no game installation found\nNothing written.\n";
+        return 1;
+    }
+
+    // a missing install keeps its values from the existing addresses.cpp (0 for new entries)
+    if (!steam || !xbox) {
+        const bool missing_steam = !steam;
+        auto&      missing       = missing_steam ? steam : xbox;
+        const auto& found        = missing_steam ? *xbox : *steam;
+        auto       existing      = ReadExisting(base_path / "addresses.cpp");
+
+        missing.emplace();
+        for (const auto& entry : found) {
+            auto it = existing.find(entry.first);
+            intptr_t addr = 0;
+            if (it != existing.end()) {
+                addr = missing_steam ? it->second.first : it->second.second;
+            } else {
+                std::cout << "WARNING: no existing " << (missing_steam ? "Steam" : "Microsoft Store")
+                          << " address for " << entry.first << ", using 0\n";
+            }
+            missing->emplace_back(entry.first, addr);
+        }
+        std::cout << "Kept existing " << (missing_steam ? "Steam" : "Microsoft Store") << " addresses\n";
+    }
+
+    assert(steam->size() == xbox->size());
+
     std::cout << "Writing to " << base_path << "\n";
-    WriteHeader(base_path / "addresses.h", steam_addresses);
-    WriteSource(base_path / "addresses.cpp", steam_addresses, xbox_addresses);
+    WriteHeader(base_path / "addresses.h", *steam);
+    WriteSource(base_path / "addresses.cpp", *steam, *xbox);
     return 0;
 }

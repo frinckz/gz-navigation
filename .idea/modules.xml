@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/gz-console-thingy.iml" filepath="$PROJECT_DIR$/.idea/gz-console-thingy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/location-zero.iml" filepath="$PROJECT_DIR$/.idea/location-zero.iml" />
     </modules>
   </component>
 </project>

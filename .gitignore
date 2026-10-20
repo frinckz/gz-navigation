@@ -28,9 +28,8 @@
 *.out
 *.app
 
-.idea/copilot*
-.idea/misc*
-.idea/editor*
+.idea/
+.run/
 
 build/
 cmake-build-debug*/
