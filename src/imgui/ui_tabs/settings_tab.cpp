@@ -38,6 +38,8 @@ void RenderSettingsTab()
                 ui->m_isCapturingTeleportKey = false;
                 ui->m_isCapturingHideHUDKey = false;
                 ui->m_isCapturingThirdPersonKey = false;
+                ui->m_isCapturingSavePositionKey = false;
+                ui->m_isCapturingRandomizePositionKey = false;
             }
             UI::HoverTooltip("Click to change the hotkey for toggling the UI");
 
@@ -60,6 +62,8 @@ void RenderSettingsTab()
                 ui->m_isCapturingTeleportKey = true;
                 ui->m_isCapturingHideHUDKey = false;
                 ui->m_isCapturingThirdPersonKey = false;
+            ui->m_isCapturingSavePositionKey = false;
+                ui->m_isCapturingRandomizePositionKey = false;
             }
             UI::HoverTooltip("Click to change the hotkey for teleporting to aim position");
 
@@ -81,6 +85,8 @@ void RenderSettingsTab()
                 ui->m_isCapturingTeleportKey = false;
                 ui->m_isCapturingHideHUDKey = true;
                 ui->m_isCapturingThirdPersonKey = false;
+                ui->m_isCapturingSavePositionKey = false;
+                ui->m_isCapturingRandomizePositionKey = false;
             }
             UI::HoverTooltip("Click to change the hotkey for hiding the HUD");
 
@@ -102,8 +108,58 @@ void RenderSettingsTab()
                 ui->m_isCapturingTeleportKey = false;
                 ui->m_isCapturingHideHUDKey = false;
                 ui->m_isCapturingThirdPersonKey = true;
+                ui->m_isCapturingSavePositionKey = false;
+                ui->m_isCapturingRandomizePositionKey = false;
             }
             UI::HoverTooltip("Click to change the hotkey for toggling third person view");
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            // -- SAVE POSITION HOTKEY --
+            ImGui::Text("Save Position:");
+
+            ImGui::TableNextColumn();
+
+            std::string SavePositionKeyLabel = ui->m_isCapturingSavePositionKey
+                ? "Press a key...##SavePositionKey"
+                : (ConsoleSettings::GetKeyName(settings.savePositionKey) + "##SavePositionKey");
+
+            if (ImGui::Button(SavePositionKeyLabel.c_str(), ImVec2(120, 0)))
+            {
+                ui->m_isCapturingToggleUI = false;
+                ui->m_isCapturingTeleportKey = false;
+                ui->m_isCapturingHideHUDKey = false;
+                ui->m_isCapturingThirdPersonKey = false;
+            ui->m_isCapturingSavePositionKey = false;
+                ui->m_isCapturingRandomizePositionKey = false;
+                ui->m_isCapturingSavePositionKey = true;
+            }
+            UI::HoverTooltip("Click to change the hotkey for saving the current player position");
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            // -- RANDOMIZE POSITION HOTKEY --
+            ImGui::Text("Randomize Position:");
+
+            ImGui::TableNextColumn();
+
+            std::string RandomizePositionKeyLabel = ui->m_isCapturingRandomizePositionKey
+                ? "Press a key...##RandomizePositionKey"
+                : (ConsoleSettings::GetKeyName(settings.randomizePositionKey) + "##RandomizePositionKey");
+
+            if (ImGui::Button(RandomizePositionKeyLabel.c_str(), ImVec2(120, 0)))
+            {
+                ui->m_isCapturingToggleUI = false;
+                ui->m_isCapturingTeleportKey = false;
+                ui->m_isCapturingHideHUDKey = false;
+                ui->m_isCapturingThirdPersonKey = false;
+            ui->m_isCapturingSavePositionKey = false;
+                ui->m_isCapturingRandomizePositionKey = false;
+                ui->m_isCapturingRandomizePositionKey = true;
+            }
+            UI::HoverTooltip("Click to change the hotkey for teleporting to a random saved position");
 
             ImGui::EndTable();
         }
@@ -116,15 +172,19 @@ void RenderSettingsTab()
             ui->m_isCapturingTeleportKey = false;
             ui->m_isCapturingHideHUDKey = false;
             ui->m_isCapturingThirdPersonKey = false;
+            ui->m_isCapturingSavePositionKey = false;
+            ui->m_isCapturingRandomizePositionKey = false;
 
             settings.toggleUIKey = VK_F1;
             settings.teleportToAimKey = VK_F2;
             settings.hideHUDKey = VK_F3;
             settings.thirdPersonKey = VK_F4;
+            settings.savePositionKey = VK_F5;
+            settings.randomizePositionKey = VK_F6;
             ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
         }
         ImGui::SameLine();
-        UI::HelpMarker("Reset hotkeys to F1 (Toggle UI), F2 (Teleport to Aim), F3 (Hide HUD) and F4 (Third Person)");
+        UI::HelpMarker("Reset hotkeys to F1 (Toggle UI), F2 (Teleport to Aim), F3 (Hide HUD), F4 (Third Person), F5 (Save Position) and F6 (Randomize Position)");
     }
 
     ImGui::Spacing();

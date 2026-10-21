@@ -16,6 +16,7 @@
 #include "game/data/collectibles_data.h"
 #include "game/data/data_funcs.h"
 #include "game/data/spawnables_data.h"
+#include "placer/placer.h"
 
 namespace gz::UITabs
 {
@@ -347,6 +348,19 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
         static float x         = playerPos.x;
         static float y         = playerPos.y;
         static float z         = playerPos.z;
+
+        ImGui::Text("Player Position");
+        ImGui::InputFloat("P.X", &playerPos.x, 1.0f, 10.0f, "%.1f", ImGuiInputTextFlags_ReadOnly);
+        ImGui::InputFloat("P.Y", &playerPos.y, 1.0f, 10.0f, "%.1f", ImGuiInputTextFlags_ReadOnly);
+        ImGui::InputFloat("P.Z", &playerPos.z, 1.0f, 10.0f, "%.1f", ImGuiInputTextFlags_ReadOnly);
+        if (ImGui::Button("Save Player Position")) {
+            Placer::instance()->SavePosition(playerPos, player->GetAimPosition());
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Reload saved positions")) {
+            Placer::instance()->ReloadSavedPositions();
+        }
+        ImGui::Checkbox("Show Position in HUD", &settings.showPlayerPosition);
 
         if (ImGui::Button("Use Current Position")) {
             x = playerPos.x;

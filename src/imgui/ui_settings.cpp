@@ -32,6 +32,12 @@ namespace gz
             m_settingsCache.push_back({"ThirdPersonKey",'i',const_cast<int*>(&thirdPersonKey),
                 nullptr
             });
+            m_settingsCache.push_back({"SavePositionKey",'i',const_cast<int*>(&savePositionKey),
+                nullptr
+            });
+            m_settingsCache.push_back({"RandomizePositionKey",'i',const_cast<int*>(&randomizePositionKey),
+                nullptr
+            });
             m_settingsCache.push_back({"FontSize",'f',const_cast<float*>(&fontSize),
                 []() {
                     ApplyFontSize();

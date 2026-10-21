@@ -162,7 +162,8 @@ bool UI::HandleHotkeyCapture(WPARAM wParam)
 {
     UI* ui = Get();
 
-    if (!ui->m_isCapturingToggleUI && !ui->m_isCapturingTeleportKey && !ui->m_isCapturingHideHUDKey && !ui->m_isCapturingThirdPersonKey) {
+    if (!ui->m_isCapturingToggleUI && !ui->m_isCapturingTeleportKey && !ui->m_isCapturingHideHUDKey && !ui->m_isCapturingThirdPersonKey
+        && !ui->m_isCapturingSavePositionKey && !ui->m_isCapturingRandomizePositionKey) {
         return false;
     }
 
@@ -197,6 +198,20 @@ bool UI::HandleHotkeyCapture(WPARAM wParam)
         ui->m_isCapturingThirdPersonKey = false;
         ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
         Log("Third Person key bound to: %s", ConsoleSettings::GetKeyName(static_cast<int>(wParam)).c_str());
+    }
+    else if (ui->m_isCapturingSavePositionKey)
+    {
+        ui->m_settings.savePositionKey = static_cast<int>(wParam);
+        ui->m_isCapturingSavePositionKey = false;
+        ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
+        Log("Save Position key bound to: %s", ConsoleSettings::GetKeyName(static_cast<int>(wParam)).c_str());
+    }
+    else if (ui->m_isCapturingRandomizePositionKey)
+    {
+        ui->m_settings.randomizePositionKey = static_cast<int>(wParam);
+        ui->m_isCapturingRandomizePositionKey = false;
+        ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
+        Log("Randomize Position key bound to: %s", ConsoleSettings::GetKeyName(static_cast<int>(wParam)).c_str());
     }
 
     return true;

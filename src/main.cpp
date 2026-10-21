@@ -3,6 +3,7 @@
 #include "addresses.h"
 #include "patches.h"
 #include "log.h"
+#include "placer/placer.h"
 #include "MinHook.h"
 
 static HMODULE g_original_module = nullptr;
@@ -71,6 +72,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
         case DLL_PROCESS_DETACH: {
             gz::Log("DLL unloading");
+            Placer::Destroy();
             MH_DisableHook(MH_ALL_HOOKS);
             MH_Uninitialize();
             if (g_original_module) {

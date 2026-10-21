@@ -21,6 +21,8 @@ namespace gz
         int teleportToAimKey = VK_F2;
         int hideHUDKey = VK_F3;
         int thirdPersonKey = VK_F4;
+        int savePositionKey = VK_F5;
+        int randomizePositionKey = VK_F6;
 
         float fontSize = 1.0f;
         float lastAppliedFontSize = 1.0f;
@@ -48,6 +50,7 @@ namespace gz
         bool mirrorRealTime = false;
         bool machinesForceSpawn = true;
         float machineBulletDmgMultiplier = 1.0f;
+        bool showPlayerPosition = false;
 
         mutable std::vector<Setting> m_settingsCache;
         mutable bool m_cacheInitialized = false;

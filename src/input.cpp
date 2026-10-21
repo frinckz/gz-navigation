@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <sstream>
 
 #include "graphics.h"
 #include "input.h"
@@ -10,6 +11,7 @@
 #include "game/input_manager.h"
 #include "game/ui_manager.h"
 #include "imgui/ui.h"
+#include "placer/placer.h"
 
 static constexpr float FONT_SIZE_INPUT = 0.0155f;
 
@@ -32,6 +34,18 @@ void Input::Draw(ID3D11DeviceContext* context)
 
         Graphics::Get()->DrawString(
             context, hint, 0.0078f, 0.965f, FONT_SIZE_INPUT, 0x5EC9C9C9
+        );
+    }
+
+    if (!ui->IsVisible() && settings.showPlayerPosition) {
+        auto playerManager = gz::CNetworkPlayerManager::instance();
+        auto playerPos = playerManager->GetPlayer()->GetPositionVector();
+        std::string location{};
+        std::stringstream locationStream = std::stringstream(location);
+        locationStream << playerPos.x << ", " << playerPos.y << ", " << playerPos.z;
+
+        Graphics::Get()->DrawString(
+            context, locationStream.str(), 0.0078f, 0.0078f, FONT_SIZE_INPUT, 0x5EC9C9C9
         );
     }
 }
@@ -95,6 +109,25 @@ bool Input::FeedEvent(uint32_t message, WPARAM wParam, LPARAM lParam)
         if (wParam == settings.thirdPersonKey)
         {
             gz::TpState::g_toggleRequested.store(true, std::memory_order_relaxed);
+            return true;
+        }
+
+        // shortcut to save the current player position
+        if (wParam == settings.savePositionKey)
+        {
+            auto* mgr = gz::CNetworkPlayerManager::instance();
+            if (mgr && mgr->GetPlayer())
+            {
+                Placer::instance()->SavePosition(mgr->GetPlayer()->GetPositionVector(),
+                                                 mgr->GetPlayer()->GetAimPosition());
+                return true;
+            }
+        }
+
+        // shortcut to teleport to a random saved position
+        if (wParam == settings.randomizePositionKey)
+        {
+            Placer::instance()->RandomizePosition();
             return true;
         }
     }
