@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "ui_settings.h"
 #include "game/animal_network.h"
 #include "game/building_item.h"
@@ -315,6 +316,7 @@ namespace gz
         const float cursorScale = style.MouseCursorScale; // save
         style.ScaleAllSizes(ratio);
         style.MouseCursorScale = cursorScale; // restore, cursor size shouldn't follow font scale
+        style.SeparatorSize = (std::max)(style.SeparatorSize, 1.0f); // ScaleAllSizes truncates it to 0 below 1.0x, which asserts in Separator()
 
         settings.lastAppliedFontSize = settings.fontSize;
     }

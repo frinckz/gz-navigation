@@ -521,7 +521,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
                 ImGui::SameLine();
                 UI::HelpMarker("The height at which the clouds appear.");
 
-                ImGui::SliderFloat("Cloud Range", &wo.cloudThickness, 0.0f, 2000.0f, "%.0f");
+                ImGui::SliderFloat("Cloud Range", &wo.cloudThickness, 1.0f, 2000.0f, "%.0f");
                 ImGui::SameLine();
                 UI::HelpMarker("The distance from the cloud height upwards where clouds can form.");
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include "addresses.h"
 
@@ -238,7 +239,8 @@ namespace gz
             weather->m_LightningPossibility = g_overrides.lightningChance;
 
             weather->m_CloudBase = g_overrides.cloudHeight;
-            weather->m_CloudHeight = g_overrides.cloudThickness;
+            // the game asserts on a cloud range below 1
+            weather->m_CloudHeight = (std::max)(g_overrides.cloudThickness, 1.0f);
 
             weather->m_WindData.m_GustMapStrengthMin = g_overrides.gustStrength;
             weather->m_WindData.m_GustMapStrengthMax = g_overrides.gustStrength;
