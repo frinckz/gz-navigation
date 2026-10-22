@@ -202,6 +202,18 @@ namespace gz
         inline Overrides g_overrides;
         inline bool g_precipOwned = false;
 
+        // CWeather::Update counts m_ForceUpdate down once per frame. While it is set, severity jumps to its target and
+        // every cloud is re-evaluated at full blend instead of a few per frame. One frame fades the old clouds, the next
+        // respawns them with the new density
+        inline constexpr int FORCE_UPDATE_FRAMES = 3;
+
+        /// Makes the weather jump to the current overrides instead of blending over several minutes
+        inline void ForceInstantUpdate(CWeather* weather)
+        {
+            if (weather)
+                weather->m_ForceUpdate = (std::max)(weather->m_ForceUpdate, FORCE_UPDATE_FRAMES);
+        }
+
         /// Writes custom values into CWeather before the original runs, so everything downstream uses our custom values.
         /// Game keeps maintaining real values the whole time in the background, so we can go back to vanilla at any time
         inline void ApplyOverrides(CWeather* weather)

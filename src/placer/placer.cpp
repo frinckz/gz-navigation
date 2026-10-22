@@ -146,7 +146,8 @@ bool Placer::RandomizeTime() {
 
 bool Placer::RandomizeWeather() {
     auto* landscapeManager = gz::CLandscapeManager::instance();
-    if (!landscapeManager || !landscapeManager->GetWeather()) {
+    auto* weather = landscapeManager ? landscapeManager->GetWeather() : nullptr;
+    if (!weather) {
         return false;
     }
     std::discrete_distribution<int> kindDist({ 10.0, 5.0, 20.0, 10.0, 55.0 });
@@ -197,6 +198,8 @@ bool Placer::RandomizeWeather() {
     if (windy) {
         wo.gustStrength = LogFalloff(WINDY_MIN, WINDY_MAX);
     }
+    // without this the clouds keep their old density for minutes
+    gz::Weather::ForceInstantUpdate(weather);
 
     gz::Log("Placer: set weather to %s%s (downpour %.2f, snow %.2f, wetness %.2f, clouds %.2f, wind %.1f)",
         WEATHER_NAMES[static_cast<int>(kind)], windy ? ", windy" : "",
