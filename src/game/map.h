@@ -8,24 +8,45 @@
 #pragma pack(push, 1)
 namespace gz
 {
+    // POI types (SMapIcon::m_Type)
+    inline constexpr uint32_t POI_TYPE_LOCAL_PLAYER  = 0x62;
+    inline constexpr uint32_t POI_TYPE_REMOTE_PLAYER = 0x63;
+
     struct SMapIcon
     {
         char        _pad0[0x18];
-        CVector3f   m_Position;     // 0x18
-        char        _pad1[0x0C];    // 0x24 -> 0x30
+        CVector3f   m_Position;     // 0x18 world position
+        CVector2f   m_MapPosition;  // 0x24 map position (world x/z / 32), sent to the UI by InitPOIs
+        char        _pad1[0x04];    // 0x2C -> 0x30
         int64_t     m_IdHash;       // 0x30
-        char        _pad2[0x16];    // 0x38 -> 0x4E
+        char        _pad2[0x10];    // 0x38 -> 0x48
+        uint32_t    m_Type;         // 0x48 POI_TYPE_*
+        char        _pad3[0x01];    // 0x4C
+        uint8_t     m_TrackedByUser;   // 0x4D
         uint8_t     m_CanFastTravelTo; // 0x4E
-        char        _pad3[0x09];    // 0x4F -> 0x58
+        uint8_t     m_IsActive;     // 0x4F (UpdatePOI and cursor selection skip inactive icons)
+        char        _pad4[0x08];    // 0x50 -> 0x58
     };
     static_assert(sizeof(SMapIcon) == 0x58);
     static_assert(offsetof(SMapIcon, m_Position) == 0x18);
+    static_assert(offsetof(SMapIcon, m_MapPosition) == 0x24);
     static_assert(offsetof(SMapIcon, m_IdHash) == 0x30);
+    static_assert(offsetof(SMapIcon, m_Type) == 0x48);
     static_assert(offsetof(SMapIcon, m_CanFastTravelTo) == 0x4E);
+    static_assert(offsetof(SMapIcon, m_IsActive) == 0x4F);
 
     class CMap;
 
     inline bool g_fastTravelAnywhereEnabled = true;
+    inline bool g_hidePlayerMapIcon = true;
+    inline bool g_disableMapFocusOnPlayer = true;
+
+    using FocusOnLocalPlayerFunc_t = void(*)(CMap*, bool);
+    inline FocusOnLocalPlayerFunc_t g_origFocusOnLocalPlayer = nullptr;
+    using UpdatePOIFunc_t = void(*)(CMap*, uint32_t, CVector3f*, float, int64_t);
+    inline UpdatePOIFunc_t g_origUpdatePOI = nullptr;
+    using InitPOIsFunc_t = void(*)(CMap*);
+    inline InitPOIsFunc_t g_origInitPOIs = nullptr;
 
     using IsAllowedInRegionFunc_t = bool(*)(CMap*, CVector3f*);
     inline IsAllowedInRegionFunc_t g_origIsAllowedInRegion = nullptr;
@@ -144,6 +165,64 @@ namespace gz
         {
             if (g_origFastTravel) return true;
             return MH_CreateHookGZ(MAP_FAST_TRAVEL, &HookedFastTravel, &g_origFastTravel);
+        }
+
+
+        // -- stop centering the map on the player (map open, map reload and the [R] key)
+        static void HookedFocusOnLocalPlayer(CMap* thisPtr, bool resetZoom)
+        {
+            if (g_disableMapFocusOnPlayer) return;
+            g_origFocusOnLocalPlayer(thisPtr, resetZoom);
+        }
+
+        static bool SetupFocusOnLocalPlayerHook()
+        {
+            if (g_origFocusOnLocalPlayer) return true;
+            return MH_CreateHookGZ(MAP_FOCUS_ON_LOCAL_PLAYER, &HookedFocusOnLocalPlayer, &g_origFocusOnLocalPlayer);
+        }
+
+
+        // -- hide the player icon by keeping it far outside the map
+        static constexpr float OFF_MAP_WORLD = -100000.0f;
+
+        // per frame: the player POI is moved to the player position
+        static void HookedUpdatePOI(CMap* thisPtr, uint32_t type, CVector3f* worldPos, float rotation, int64_t id)
+        {
+            if (g_hidePlayerMapIcon && type == POI_TYPE_LOCAL_PLAYER)
+            {
+                CVector3f offMap{OFF_MAP_WORLD, worldPos ? worldPos->y : 0.0f, OFF_MAP_WORLD};
+                g_origUpdatePOI(thisPtr, type, &offMap, rotation, id);
+                return;
+            }
+            g_origUpdatePOI(thisPtr, type, worldPos, rotation, id);
+        }
+
+        static bool SetupUpdatePOIHook()
+        {
+            if (g_origUpdatePOI) return true;
+            return MH_CreateHookGZ(MAP_UPDATE_POI, &HookedUpdatePOI, &g_origUpdatePOI);
+        }
+
+        // map open / zoom: all icons are sent to the UI with their stored map position
+        static void HookedInitPOIs(CMap* thisPtr)
+        {
+            if (g_hidePlayerMapIcon)
+            {
+                for (auto* icon = thisPtr->m_IconArrayBegin; icon != thisPtr->m_IconArrayEnd; icon++)
+                {
+                    if (icon->m_Type != POI_TYPE_LOCAL_PLAYER) continue;
+                    icon->m_Position.x = OFF_MAP_WORLD;
+                    icon->m_Position.z = OFF_MAP_WORLD;
+                    icon->m_MapPosition = {OFF_MAP_WORLD / 32.0f, OFF_MAP_WORLD / 32.0f};
+                }
+            }
+            g_origInitPOIs(thisPtr);
+        }
+
+        static bool SetupInitPOIsHook()
+        {
+            if (g_origInitPOIs) return true;
+            return MH_CreateHookGZ(MAP_INIT_POIS, &HookedInitPOIs, &g_origInitPOIs);
         }
     };
     static_assert(sizeof(CMap) == 0x6F8, "CMap size mismatch!");

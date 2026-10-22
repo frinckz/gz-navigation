@@ -227,6 +227,14 @@ bool InitPatchesAndHooks()
         fastTravelHooksOk &= CMap::SetupFastTravelHook();
         if (!fastTravelHooksOk) Log("Failed to setup fast travel hooks");
 
+        if (!CMap::SetupFocusOnLocalPlayerHook())
+            Log("Failed to setup FocusOnLocalPlayer hook");
+
+        bool playerIconHooksOk = true;
+        playerIconHooksOk &= CMap::SetupUpdatePOIHook();
+        playerIconHooksOk &= CMap::SetupInitPOIsHook();
+        if (!playerIconHooksOk) Log("Failed to setup player map icon hooks");
+
         if (!Intro::SetupIntroComplete())
             Log("Failed to setup 'Intro Complete'");
 

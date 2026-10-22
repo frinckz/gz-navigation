@@ -427,6 +427,22 @@ namespace gz::UITabs
             UI::HelpMarker(
                 "Allows fast traveling to any icon on the map. You can even place custom waypoints and fast travel to them.");
 
+            if (ImGui::Checkbox("Hide Player Icon on Map", &settings.hidePlayerMapIcon))
+            {
+                g_hidePlayerMapIcon = settings.hidePlayerMapIcon;
+                ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
+            }
+            ImGui::SameLine();
+            UI::HelpMarker("Keeps the player icon outside of the map. Takes effect the next time the map is opened.");
+
+            if (ImGui::Checkbox("Don't Center Map on Player", &settings.disableMapFocusOnPlayer))
+            {
+                g_disableMapFocusOnPlayer = settings.disableMapFocusOnPlayer;
+                ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
+            }
+            ImGui::SameLine();
+            UI::HelpMarker("The map no longer jumps to the player when it is opened or when pressing the focus key.");
+
             CMap* map = CMap::instance();
             if (settings.showDebugInfo && ImGui::TreeNode("Debug Info##map") && map)
             {

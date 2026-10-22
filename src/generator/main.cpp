@@ -970,6 +970,33 @@ FindPatternResult Generate(const char* name, const char* exepath)
         return rebase(game_file, match);
     });
 
+    // CMap::FocusOnLocalPlayer(CMap*, bool resetZoom): centers the map on the player (map open, reload, [R])
+    FindPattern("MAP_FOCUS_ON_LOCAL_PLAYER", game_file, result, [&] {
+        auto match = pattern("40 53 48 83 EC 30 48 8B 05 ? ? ? ? 48 8B D9 4C 8B 40 68 49 8B 80 50 01 00 00 48 85 C0 74 ? F3 0F 10 80 D8 3A 00 00", game_file)
+            .count(1)
+            .get(0)
+            .as<uintptr_t>();
+        return rebase(game_file, match);
+    });
+
+    // CMap::UpdatePOI(CMap*, type, worldPos*, rotation, id): moves a POI, called every frame for the player (type 0x62)
+    FindPattern("MAP_UPDATE_POI", game_file, result, [&] {
+        auto match = pattern("48 8B C4 56 57 41 56 48 81 EC 80 00 00 00 48 C7 40 98 FE FF FF FF 48 89 58 10 48 89 68 18 0F 29 78 D8 0F 28 FB 49 8B F8 8B EA 48 8B D9 45 33 DB", game_file)
+            .count(1)
+            .get(0)
+            .as<uintptr_t>();
+        return rebase(game_file, match);
+    });
+
+    // CMap::InitPOIs(CMap*): sends all map icons (incl. the player) to the UI when the map is opened
+    FindPattern("MAP_INIT_POIS", game_file, result, [&] {
+        auto match = pattern("48 8B C4 55 41 54 41 55 41 56 41 57 48 8D 68 A1 48 81 EC E0 00 00 00 48 C7 45 87 FE FF FF FF 48 89 58 08 48 89 70 10 48 89 78 18 0F 29 70 C8", game_file)
+            .count(1)
+            .get(0)
+            .as<uintptr_t>();
+        return rebase(game_file, match);
+    });
+
     FindPattern("GET_VEHICLE_TORQUE", game_file, result, [&] {
         auto match = pattern("CC 4C ? ? ? ? ? ? 48 ? ? 4C ? ? ? ? ? ? 43", game_file)
             .count(1)

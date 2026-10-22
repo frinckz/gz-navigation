@@ -35,6 +35,8 @@ namespace gz
         bool enableInfiniteAmmo = false;
         bool enableInfiniteDeployables = false;
         bool enableFastTravelAnywhere = true;
+        bool hidePlayerMapIcon = true;
+        bool disableMapFocusOnPlayer = true;
         bool enableUnrestrictedBuilding = true;
         bool enableUnlimitedResources = false;
         bool enableInfiniteFuel = false;

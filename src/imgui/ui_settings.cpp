@@ -81,6 +81,14 @@ namespace gz
                 [this]() {
                     g_fastTravelAnywhereEnabled = enableFastTravelAnywhere;
             }});
+            m_settingsCache.push_back({"HidePlayerMapIcon",'b',const_cast<bool*>(&hidePlayerMapIcon),
+                [this]() {
+                    g_hidePlayerMapIcon = hidePlayerMapIcon;
+            }});
+            m_settingsCache.push_back({"DisableMapFocusOnPlayer",'b',const_cast<bool*>(&disableMapFocusOnPlayer),
+                [this]() {
+                    g_disableMapFocusOnPlayer = disableMapFocusOnPlayer;
+            }});
             m_settingsCache.push_back({"DisableBuildingRestrictions",'b',const_cast<bool*>(&enableUnrestrictedBuilding),
                 [this]() {
                     g_forceSpawnLocationValid = enableUnrestrictedBuilding;
