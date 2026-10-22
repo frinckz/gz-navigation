@@ -2,6 +2,8 @@
 #include "log.h"
 #include "game/game_world.h"
 #include "game/world_time.h"
+#include "game/landscape_manager.h"
+#include "game/weather.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -17,9 +19,28 @@ static constexpr float DAY_START  = 6.0f;
 static constexpr float DAY_END    = 18.0f;
 static constexpr float DAY_WEIGHT = 1.5f;
 
+// order matches the chances in RandomizeWeather
+enum class WeatherKind { Snowing, Snowed, Raining, Rained, Dry };
+static constexpr const char* WEATHER_NAMES[] = { "snowing", "snowy ground", "raining", "wet ground", "dry" };
+
+static constexpr float CALM_WIND      = 2.0f;
+static constexpr float WINDY_MIN      = 4.0f;
+static constexpr float WINDY_MAX      = 10.0f;
+static constexpr float RAIN_LIGHTNING = 0.81f;
+
 static std::mt19937& Rng() {
     static thread_local std::mt19937 rng{ std::random_device{}() };
     return rng;
+}
+
+// the product of two uniforms has density -ln(t) on [0, 1): low intensities are common, the maximum is rare
+static float LogFalloff(float min, float max) {
+    std::uniform_real_distribution<float> unit(0.0f, 1.0f);
+    return min + (max - min) * unit(Rng()) * unit(Rng());
+}
+
+static float UniformRange(float min, float max) {
+    return std::uniform_real_distribution<float>(min, max)(Rng());
 }
 
 // File format: one entry per line, "x y z (mouse.x mouse.y mouse.z)"; '#' starts a comment, empty lines are ignored
@@ -35,8 +56,9 @@ Placer::Placer() {
 
 bool Placer::Place() {
     bool timeResult = RandomizeTime();
+    bool weatherResult = RandomizeWeather();
     bool positionResult = RandomizePosition();
-    return timeResult && positionResult;
+    return timeResult && weatherResult && positionResult;
 }
 
 void Placer::ReloadSavedPositions() {
@@ -119,6 +141,66 @@ bool Placer::RandomizeTime() {
     int hours = 0, minutes = 0;
     worldTime->GetTimeAsHHMM(hours, minutes);
     gz::Log("Placer: set time to %02d:%02d (%s)", hours, minutes, day ? "day" : "night");
+    return true;
+}
+
+bool Placer::RandomizeWeather() {
+    auto* landscapeManager = gz::CLandscapeManager::instance();
+    if (!landscapeManager || !landscapeManager->GetWeather()) {
+        return false;
+    }
+    std::discrete_distribution<int> kindDist({ 10.0, 5.0, 20.0, 10.0, 55.0 });
+    const auto kind = static_cast<WeatherKind>(kindDist(Rng()));
+
+    auto& wo = gz::Weather::g_overrides;
+    wo = gz::Weather::Overrides{};
+    wo.enabled = true;
+    wo.overrideDownpour = true;
+    wo.downpour = 0.0f;
+    wo.snowRatio = 0.0f;
+    wo.groundSnow = 0.0f;
+    wo.groundWetness = 0.0f;
+    wo.lightningChance = 0.0f;
+    wo.gustStrength = CALM_WIND;
+
+    double windChance = 0.0;
+    switch (kind) {
+    case WeatherKind::Snowing:
+        wo.downpour = LogFalloff(0.1f, 1.0f);
+        wo.snowRatio = 1.0f;
+        wo.groundSnow = LogFalloff(0.2f, 1.0f);
+        // precipitation needs a thick sky to look right, heavier downpour gets darker clouds
+        wo.cloudDensity = 4.0f + 2.0f * wo.downpour;
+        windChance = 0.5;
+        break;
+    case WeatherKind::Snowed:
+        wo.groundSnow = LogFalloff(0.2f, 1.0f);
+        wo.cloudDensity = UniformRange(1.6f, 4.0f);
+        break;
+    case WeatherKind::Raining:
+        wo.downpour = LogFalloff(0.1f, 1.0f);
+        wo.groundWetness = 0.5f + 0.5f * wo.downpour;
+        wo.cloudDensity = 4.0f + 2.0f * wo.downpour;
+        wo.lightningChance = RAIN_LIGHTNING;
+        windChance = 0.3;
+        break;
+    case WeatherKind::Rained:
+        wo.groundWetness = LogFalloff(0.3f, 1.0f);
+        wo.cloudDensity = UniformRange(1.6f, 4.0f);
+        break;
+    case WeatherKind::Dry:
+        wo.cloudDensity = UniformRange(1.0f, 4.0f);
+        windChance = 0.1;
+        break;
+    }
+    const bool windy = std::bernoulli_distribution(windChance)(Rng());
+    if (windy) {
+        wo.gustStrength = LogFalloff(WINDY_MIN, WINDY_MAX);
+    }
+
+    gz::Log("Placer: set weather to %s%s (downpour %.2f, snow %.2f, wetness %.2f, clouds %.2f, wind %.1f)",
+        WEATHER_NAMES[static_cast<int>(kind)], windy ? ", windy" : "",
+        wo.downpour, wo.groundSnow, wo.groundWetness, wo.cloudDensity, wo.gustStrength);
     return true;
 }
 
