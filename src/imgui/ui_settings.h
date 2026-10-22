@@ -22,7 +22,7 @@ namespace gz
         int hideHUDKey = VK_F3;
         int thirdPersonKey = VK_F4;
         int savePositionKey = VK_F5;
-        int randomizePositionKey = VK_F6;
+        int placePositionKey = VK_F6;
 
         float fontSize = 1.0f;
         float lastAppliedFontSize = 1.0f;

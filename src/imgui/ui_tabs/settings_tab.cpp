@@ -147,7 +147,7 @@ void RenderSettingsTab()
 
             std::string RandomizePositionKeyLabel = ui->m_isCapturingRandomizePositionKey
                 ? "Press a key...##RandomizePositionKey"
-                : (ConsoleSettings::GetKeyName(settings.randomizePositionKey) + "##RandomizePositionKey");
+                : (ConsoleSettings::GetKeyName(settings.placePositionKey) + "##RandomizePositionKey");
 
             if (ImGui::Button(RandomizePositionKeyLabel.c_str(), ImVec2(120, 0)))
             {
@@ -180,7 +180,7 @@ void RenderSettingsTab()
             settings.hideHUDKey = VK_F3;
             settings.thirdPersonKey = VK_F4;
             settings.savePositionKey = VK_F5;
-            settings.randomizePositionKey = VK_F6;
+            settings.placePositionKey = VK_F6;
             ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
         }
         ImGui::SameLine();

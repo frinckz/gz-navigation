@@ -208,7 +208,7 @@ bool UI::HandleHotkeyCapture(WPARAM wParam)
     }
     else if (ui->m_isCapturingRandomizePositionKey)
     {
-        ui->m_settings.randomizePositionKey = static_cast<int>(wParam);
+        ui->m_settings.placePositionKey       = static_cast<int>(wParam);
         ui->m_isCapturingRandomizePositionKey = false;
         ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
         Log("Randomize Position key bound to: %s", ConsoleSettings::GetKeyName(static_cast<int>(wParam)).c_str());

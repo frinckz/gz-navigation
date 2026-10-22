@@ -38,8 +38,15 @@ class Placer {
     }
 
     void SavePosition(CVector3f position, CVector3f aimPosition);
+
     // Discards the in-memory list and re-reads the positions file
     void ReloadSavedPositions();
+
     // Teleports the player to a random saved position; returns false if none are saved
     bool RandomizePosition();
+
+    // Sets a random time of day, day (06:00-18:00) is 1.5x more likely than night; returns false without world time
+    bool RandomizeTime();
+
+    bool Place();
 };

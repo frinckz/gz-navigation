@@ -125,9 +125,9 @@ bool Input::FeedEvent(uint32_t message, WPARAM wParam, LPARAM lParam)
         }
 
         // shortcut to teleport to a random saved position
-        if (wParam == settings.randomizePositionKey)
+        if (wParam == settings.placePositionKey)
         {
-            Placer::instance()->RandomizePosition();
+            Placer::instance()->Place();
             return true;
         }
     }
