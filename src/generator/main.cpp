@@ -997,6 +997,15 @@ FindPatternResult Generate(const char* name, const char* exepath)
         return rebase(game_file, match);
     });
 
+    // CNotificationPopup::QueueNotification(this, type, param, ...): queues a popup (e.g. location discovered / location summary)
+    FindPattern("NOTIFICATION_POPUP_QUEUE", game_file, result, [&] {
+        auto match = pattern("4C 89 4C 24 20 44 89 44 24 18 89 54 24 10 48 89 4C 24 08 48 81 EC 98 01 00 00", game_file)
+            .count(1)
+            .get(0)
+            .as<uintptr_t>();
+        return rebase(game_file, match);
+    });
+
     FindPattern("GET_VEHICLE_TORQUE", game_file, result, [&] {
         auto match = pattern("CC 4C ? ? ? ? ? ? 48 ? ? 4C ? ? ? ? ? ? 43", game_file)
             .count(1)

@@ -7,6 +7,7 @@
 #include "game/event_scheduler.h"
 #include "game/game_world.h"
 #include "game/landscape_manager.h"
+#include "game/notification_popup.h"
 #include "game/physics_system.h"
 #include "game/player_network_manager.h"
 #include "game/spawn_system.h"
@@ -361,6 +362,16 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
             Placer::instance()->ReloadSavedPositions();
         }
         ImGui::Checkbox("Show Position in HUD", &settings.showPlayerPosition);
+        if (ImGui::Checkbox("Hide Location Popups", &settings.hideLocationPopups)) {
+            g_hideLocationPopups = settings.hideLocationPopups;
+            ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
+        }
+        ImGui::SameLine(); UI::HelpMarker("Hides the popups shown when discovering a new location and when entering a location (collectibles summary).");
+        if (ImGui::Checkbox("Hide XP Popups", &settings.hideXPPopups)) {
+            g_hideXPPopups = settings.hideXPPopups;
+            ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
+        }
+        ImGui::SameLine(); UI::HelpMarker("Hides the experience gain popup (e.g. after discovering a location).");
 
         if (ImGui::Button("Use Current Position")) {
             x = playerPos.x;

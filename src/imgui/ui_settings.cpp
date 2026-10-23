@@ -4,6 +4,7 @@
 #include "game/building_item.h"
 #include "game/event_scheduler.h"
 #include "game/map.h"
+#include "game/notification_popup.h"
 #include "game/player.h"
 #include "game/custom/player_eq_utils.h"
 #include "game/ui_manager.h"
@@ -146,6 +147,12 @@ namespace gz
             });
             m_settingsCache.push_back({"MirroRealTime",'b',const_cast<bool*>(&mirrorRealTime),
                 nullptr // handled in game update hook
+            });
+            m_settingsCache.push_back({"HideLocationPopups",'b',const_cast<bool*>(&hideLocationPopups),
+                [this]() { g_hideLocationPopups = hideLocationPopups; }
+            });
+            m_settingsCache.push_back({"HideXPPopups",'b',const_cast<bool*>(&hideXPPopups),
+                [this]() { g_hideXPPopups = hideXPPopups; }
             });
             m_settingsCache.push_back({"MachinesForceSpawn",'b',const_cast<bool*>(&machinesForceSpawn),
                 nullptr // handled in imgui ui

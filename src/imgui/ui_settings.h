@@ -53,6 +53,8 @@ namespace gz
         bool machinesForceSpawn = true;
         float machineBulletDmgMultiplier = 1.0f;
         bool showPlayerPosition = false;
+        bool hideLocationPopups = true;
+        bool hideXPPopups = true;
 
         mutable std::vector<Setting> m_settingsCache;
         mutable bool m_cacheInitialized = false;

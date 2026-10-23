@@ -22,6 +22,7 @@
 #include "game/input_manager.h"
 #include "game/intro.h"
 #include "game/map.h"
+#include "game/notification_popup.h"
 #include "game/custom/player_eq_utils.h"
 #include "game/player_spawn_manager.h"
 #include "game/ui_manager.h"
@@ -243,6 +244,9 @@ bool InitPatchesAndHooks()
 
         if (!CUIManager::SetupIsUIShownHook())
             Log("Failed to setup IsUIShown hook");
+
+        if (!CNotificationPopup::SetupQueueNotificationHook())
+            Log("Failed to setup QueueNotification hook");
 
     } catch (const std::exception &e) {
         Log("Exception during patch initialization: %s", e.what());
