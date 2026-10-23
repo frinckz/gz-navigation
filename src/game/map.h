@@ -3,6 +3,7 @@
 #include <cstddef>
 
 #include "addresses.h"
+#include "network_manager.h"
 #include "ui_base.h"
 
 #pragma pack(push, 1)
@@ -34,6 +35,34 @@ namespace gz
     static_assert(offsetof(SMapIcon, m_Type) == 0x48);
     static_assert(offsetof(SMapIcon, m_CanFastTravelTo) == 0x4E);
     static_assert(offsetof(SMapIcon, m_IsActive) == 0x4F);
+
+    // user waypoint (custom map marker), filled by CMap::SetUserWaypoint
+    struct SUserWaypointDesc
+    {
+        CVector3f   m_Position;     // 0x00 world position (y raised above the terrain)
+        char        _pad0[0x44];    // 0x0C -> 0x50 (title + player name strings)
+        int64_t     m_Id;           // 0x50
+        char        _pad1[0x18];    // 0x58 -> 0x70
+    };
+    static_assert(sizeof(SUserWaypointDesc) == 0x70);
+    static_assert(offsetof(SUserWaypointDesc, m_Id) == 0x50);
+
+    // MSVC std::map<uint8_t peerId, SUserWaypointDesc> node
+    struct SUserWaypointNode
+    {
+        SUserWaypointNode*  m_Left;     // 0x00
+        SUserWaypointNode*  m_Parent;   // 0x08
+        SUserWaypointNode*  m_Right;    // 0x10
+        char                m_Color;    // 0x18
+        char                m_IsNil;    // 0x19
+        char                _pad0[0x6]; // 0x1A -> 0x20
+        uint8_t             m_PeerId;   // 0x20 key
+        char                _pad1[0x7]; // 0x21 -> 0x28
+        SUserWaypointDesc   m_Desc;     // 0x28 value
+    };
+    static_assert(offsetof(SUserWaypointNode, m_IsNil) == 0x19);
+    static_assert(offsetof(SUserWaypointNode, m_PeerId) == 0x20);
+    static_assert(offsetof(SUserWaypointNode, m_Desc) == 0x28);
 
     class CMap;
 
@@ -82,12 +111,41 @@ namespace gz
         char        _pad5a[0x7C];       // 0xA4 -> 0x120
         SMapIcon*   m_IconArrayBegin;   // 0x120
         SMapIcon*   m_IconArrayEnd;     // 0x128
-        char        _pad5b[0x5C8];      // 0x130 -> 0x6F8
+        char        _pad5b[0xC8];       // 0x130 -> 0x1F8
+        SUserWaypointNode* m_UserWaypointsHead; // 0x1F8 std::map<uint8_t peerId, SUserWaypointDesc> head
+        size_t      m_UserWaypointsSize;        // 0x200
+        char        _pad5c[0x4F0];      // 0x208 -> 0x6F8
         // total size: 0x6f8
 
         static CMap* instance()
         {
             return *(CMap**)(GetAddress(INST_MAP));
+        }
+
+        // reads the user waypoint (custom map marker) of the given player from the map's waypoint tree
+        bool GetUserWaypoint(uint8_t peerId, CVector3f& out) const
+        {
+            if (!m_UserWaypointsHead) return false;
+            const SUserWaypointNode* node = m_UserWaypointsHead->m_Parent; // root
+            while (node && !node->m_IsNil)
+            {
+                if (peerId == node->m_PeerId)
+                {
+                    out = node->m_Desc.m_Position;
+                    return true;
+                }
+                node = peerId < node->m_PeerId ? node->m_Left : node->m_Right;
+            }
+            return false;
+        }
+
+        // the local player's user waypoint; false if none is placed
+        static bool GetLocalUserWaypoint(CVector3f& out)
+        {
+            auto* map = instance();
+            auto* networkManager = CBaseNetworkManager::instance();
+            if (!map || !networkManager) return false;
+            return map->GetUserWaypoint(networkManager->GetLocalPeerID(), out);
         }
 
 
@@ -226,6 +284,7 @@ namespace gz
         }
     };
     static_assert(sizeof(CMap) == 0x6F8, "CMap size mismatch!");
+    static_assert(offsetof(CMap, m_UserWaypointsHead) == 0x1F8, "m_UserWaypointsHead offset mismatch!");
     static_assert(offsetof(CMap, cursorScreenX) == 0x8C, "cursorWorldX offset mismatch!");
     static_assert(offsetof(CMap, cursorScreenY) == 0x90, "cursorWorldY offset mismatch!");
     static_assert(offsetof(CMap, mapScale) == 0x9C, "mapScale offset mismatch!");

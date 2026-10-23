@@ -1,18 +1,13 @@
 #pragma once
 
+#include <optional>
 #include <random>
 #include <string>
 #include <vector>
 
 #include "data_types.h"
-
-struct RandomPosition {
-    CVector3f position;
-    CVector3f aimPosition;
-    std::string name;
-    std::string region;
-    std::string type;
-};
+#include "guesser.h"
+#include "random_position.h"
 
 class Placer {
 
@@ -23,12 +18,15 @@ class Placer {
     ~Placer();
     static std::string GetPositionsFilePath();
 
-    std::vector<RandomPosition> m_randomPositions{};
 
     template <typename T>
     const T* ChooseRandomItem(const std::vector<T>& v);
 
   public:
+    static std::vector<RandomPosition> m_randomPositions;
+
+    static GuesserGameMode* m_guesser;
+
     static Placer* instance() {
         if (!sm_destroyed && !sm_placer) {
             sm_placer = new Placer();
@@ -45,8 +43,8 @@ class Placer {
     // Discards the in-memory list and re-reads the positions file
     void ReloadSavedPositions();
 
-    // Teleports the player to a random saved position; returns false if none are saved
-    bool RandomizePosition();
+    // Teleports the player to a random saved position and returns it; std::nullopt if none are saved
+    std::optional<RandomPosition> RandomizePosition(std::vector<RandomPosition> positions = Placer::m_randomPositions);
 
     // Sets a random time of day, day (06:00-18:00) is 1.5x more likely than night; returns false without world time
     bool RandomizeTime();
@@ -55,5 +53,6 @@ class Placer {
     // wind is 50% likely while snowing, 30% while raining and 10% when dry. Returns false without weather
     bool RandomizeWeather();
 
-    bool Place();
+    // Randomizes time, weather and position; returns the chosen position (the teleport may finish frames later)
+    std::optional<RandomPosition> Place(std::vector<RandomPosition> positions = Placer::m_randomPositions);
 };

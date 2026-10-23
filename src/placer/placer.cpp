@@ -13,6 +13,10 @@
 
 Placer* Placer::sm_placer = nullptr;
 bool Placer::sm_destroyed = false;
+std::vector<RandomPosition> Placer::m_randomPositions = {};
+
+GuesserGameMode* Placer::m_guesser = new GuesserGameMode();
+
 
 // day and night are both 12 hours long, so day is DAY_WEIGHT times as likely per hour as night
 static constexpr float DAY_START  = 6.0f;
@@ -54,11 +58,10 @@ Placer::Placer() {
     ReloadSavedPositions();
 }
 
-bool Placer::Place() {
-    bool timeResult = RandomizeTime();
-    bool weatherResult = RandomizeWeather();
-    bool positionResult = RandomizePosition();
-    return timeResult && weatherResult && positionResult;
+std::optional<RandomPosition> Placer::Place(std::vector<RandomPosition> positions) {
+    RandomizeTime();
+    RandomizeWeather();
+    return RandomizePosition(positions);
 }
 
 void Placer::ReloadSavedPositions() {
@@ -106,21 +109,21 @@ void Placer::SavePosition(CVector3f position, CVector3f aimPosition) {
         position.x, position.y, position.z, m_randomPositions.size());
 }
 
-bool Placer::RandomizePosition() {
-    auto nextPosition = ChooseRandomItem(m_randomPositions);
+std::optional<RandomPosition> Placer::RandomizePosition(std::vector<RandomPosition> positions) {
+    auto nextPosition = ChooseRandomItem(positions);
     if (!nextPosition) {
         gz::Log("Placer: no saved positions to randomize");
-        return false;
+        return std::nullopt;
     }
     auto* gameWorld = gz::CGameWorld::instance();
     if (!gameWorld) {
-        return false;
+        return std::nullopt;
     }
     const CVector3f& aim = nextPosition->aimPosition;
     // entries without a usable aim position (0 0 0) only change the position
     bool hasAim = aim.x != 0.0f || aim.y != 0.0f || aim.z != 0.0f;
     gameWorld->SafeTeleportToPosition(nextPosition->position, nullptr, hasAim ? &aim : nullptr);
-    return true;
+    return *nextPosition;
 }
 
 bool Placer::RandomizeTime() {

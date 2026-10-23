@@ -9,6 +9,7 @@
 #include "game/game_state.h"
 #include "game/game_world.h"
 #include "game/input_manager.h"
+#include "game/map.h"
 #include "game/ui_manager.h"
 #include "imgui/ui.h"
 #include "placer/placer.h"
@@ -45,7 +46,20 @@ void Input::Draw(ID3D11DeviceContext* context)
         locationStream << playerPos.x << ", " << playerPos.y << ", " << playerPos.z;
 
         Graphics::Get()->DrawString(
-            context, locationStream.str(), 0.0078f, 0.0078f, FONT_SIZE_INPUT, 0x5EC9C9C9
+            context, locationStream.str(), 0.0078f, 0.0228f, FONT_SIZE_INPUT, 0x5EC9C9C9
+        );
+    }
+
+    if (!ui->IsVisible() /* && TODO: is GuesserGameMode */) {
+        auto guesser = Placer::m_guesser;
+        auto round = guesser->GetRound();
+        auto score = guesser->GetScore();
+
+        std::stringstream infoStream = std::stringstream("");
+        infoStream << "Round #" << round + 1 << ", Score " << score << " points";
+
+        Graphics::Get()->DrawString(
+            context, infoStream.str(), 0.0078f, 0.0078f, FONT_SIZE_INPUT, 0x5EF9F9F9
         );
     }
 }
@@ -127,7 +141,12 @@ bool Input::FeedEvent(uint32_t message, WPARAM wParam, LPARAM lParam)
         // shortcut to teleport to a random saved position
         if (wParam == settings.placePositionKey)
         {
-            Placer::instance()->Place();
+            // the user's custom map marker is the guess; without one the round is only advanced
+            CVector3f marker{};
+            if (gz::CMap::GetLocalUserWaypoint(marker)) {
+                Placer::m_guesser->Guess(marker);
+                Placer::m_guesser->AdvanceToNextRound();
+            }
             return true;
         }
     }
