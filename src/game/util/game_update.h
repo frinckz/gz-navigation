@@ -12,6 +12,7 @@
 #include "game/world_time.h"
 #include "game/custom/preset_override.h"
 #include "imgui/ui.h"
+#include "placer/gz_nav.h"
 
 #pragma pack(push, 1)
 namespace gz::Utils
@@ -94,6 +95,8 @@ namespace gz::Utils
             ProcessPendingHacks();
 
             PresetOverride::OnGameUpdate();
+
+            update_gz_nav();
         }
     }
 } // namespace gz::Utils

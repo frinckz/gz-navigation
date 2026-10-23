@@ -1,7 +1,9 @@
 #include "guesser.h"
-#include "placer.h"
+#include "placer/placer.h"
 
+#include <algorithm>
 #include <cmath>
+
 
 const float MAX_X = 5000;
 const float MAX_Y = 5000;
@@ -56,4 +58,8 @@ long GuesserGameMode::GetRound() const {
 
 double GuesserGameMode::GetScore() const {
     return m_score;
+}
+
+void GuesserGameMode::Start() {
+    Placer::instance()->Place();
 }

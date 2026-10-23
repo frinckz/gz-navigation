@@ -6,16 +6,13 @@
 #include <vector>
 
 #include "data_types.h"
-#include "guesser.h"
 #include "random_position.h"
 
 class Placer {
 
   private:
-    static Placer *sm_placer;
-    static bool sm_destroyed;
     Placer();
-    ~Placer();
+    ~Placer() = default;
     static std::string GetPositionsFilePath();
 
 
@@ -25,17 +22,9 @@ class Placer {
   public:
     static std::vector<RandomPosition> m_randomPositions;
 
-    static GuesserGameMode* m_guesser;
-
     static Placer* instance() {
-        if (!sm_destroyed && !sm_placer) {
-            sm_placer = new Placer();
-        }
-        return sm_placer;
-    }
-
-    static void Destroy() {
-        delete sm_placer;
+        static Placer instance;
+        return &instance;
     }
 
     void SavePosition(CVector3f position, CVector3f aimPosition);

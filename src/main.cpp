@@ -1,10 +1,12 @@
-#include <Windows.h>
-#include "xinput9_1_0.h"
-#include "addresses.h"
-#include "patches.h"
-#include "log.h"
-#include "placer/placer.h"
 #include "MinHook.h"
+#include "addresses.h"
+#include "log.h"
+#include "patches.h"
+#include "placer/guesser.h"
+#include "placer/gz_nav.h"
+#include "placer/placer.h"
+#include "xinput9_1_0.h"
+#include <Windows.h>
 
 static HMODULE g_original_module = nullptr;
 
@@ -67,12 +69,13 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
                 return FALSE;
             }
 
+            init_gz_nav();
+
             break;
         }
 
         case DLL_PROCESS_DETACH: {
             gz::Log("DLL unloading");
-            Placer::Destroy();
             MH_DisableHook(MH_ALL_HOOKS);
             MH_Uninitialize();
             if (g_original_module) {

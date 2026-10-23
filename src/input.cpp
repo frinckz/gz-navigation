@@ -4,7 +4,6 @@
 #include "graphics.h"
 #include "input.h"
 
-#include "log.h"
 #include "game/camera_collision_modifier.h"
 #include "game/game_state.h"
 #include "game/game_world.h"
@@ -12,7 +11,10 @@
 #include "game/map.h"
 #include "game/ui_manager.h"
 #include "imgui/ui.h"
+#include "log.h"
+#include "placer/guesser.h"
 #include "placer/placer.h"
+#include "placer/gz_nav.h"
 
 static constexpr float FONT_SIZE_INPUT = 0.0155f;
 
@@ -50,8 +52,8 @@ void Input::Draw(ID3D11DeviceContext* context)
         );
     }
 
-    if (!ui->IsVisible() /* && TODO: is GuesserGameMode */) {
-        auto guesser = Placer::m_guesser;
+    if (!ui->IsVisible() && g_gzNavSettings.mode == GzNavGameMode::Guesser) {
+        auto guesser = GuesserGameMode::instance();
         auto round = guesser->GetRound();
         auto score = guesser->GetScore();
 
@@ -144,8 +146,8 @@ bool Input::FeedEvent(uint32_t message, WPARAM wParam, LPARAM lParam)
             // the user's custom map marker is the guess; without one the round is only advanced
             CVector3f marker{};
             if (gz::CMap::GetLocalUserWaypoint(marker)) {
-                Placer::m_guesser->Guess(marker);
-                Placer::m_guesser->AdvanceToNextRound();
+                GuesserGameMode::instance()->Guess(marker);
+                GuesserGameMode::instance()->AdvanceToNextRound();
             }
             return true;
         }

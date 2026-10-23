@@ -11,12 +11,7 @@
 #include <iomanip>
 #include <sstream>
 
-Placer* Placer::sm_placer = nullptr;
-bool Placer::sm_destroyed = false;
 std::vector<RandomPosition> Placer::m_randomPositions = {};
-
-GuesserGameMode* Placer::m_guesser = new GuesserGameMode();
-
 
 // day and night are both 12 hours long, so day is DAY_WEIGHT times as likely per hour as night
 static constexpr float DAY_START  = 6.0f;
@@ -87,13 +82,6 @@ void Placer::ReloadSavedPositions() {
         }
     }
     gz::Log("Placer: loaded %zu saved positions", m_randomPositions.size());
-}
-
-Placer::~Placer() {
-    // positions are written on every save, so there is nothing left to flush
-    sm_placer = nullptr;
-    sm_destroyed = true;
-    gz::Log("Placer: destroyed");
 }
 
 void Placer::SavePosition(CVector3f position, CVector3f aimPosition) {
