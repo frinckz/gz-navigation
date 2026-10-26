@@ -31,6 +31,7 @@ bool GuesserGameMode::Guess() {
     if (m_guessed || !gz::CMap::GetLocalUserWaypoint(marker)) {
         return false;
     }
+    m_guessPosition = marker;
     m_roundDistance = calculateDistance(m_targetPosition.position, marker);
     // full points within PERFECT_DISTANCE, then exponential decay: ~37 at 500 m, ~5 at 1.5 km
     m_roundScore = m_roundDistance <= PERFECT_DISTANCE

@@ -32,6 +32,7 @@ namespace gz
         void RenderGuesserInfo();
         void RenderGuesserControls();
         void RenderGuessResult();
+        void RenderGuessOverlay();
     };
 
 } // namespace gz

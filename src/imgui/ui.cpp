@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "log.h"
 
+#include <algorithm>
 #include <imgui.h>
 #include "imgui_internal.h"
 #include "game/custom/tp_state.h"
@@ -139,9 +140,81 @@ void UI::Render()
         RenderGuesserInfo();
         RenderGuesserControls();
         if (GuesserGameMode::instance()->HasGuessed()) {
+            RenderGuessOverlay();
             RenderGuessResult();
         }
     }
+}
+
+// The map is laid out on a 1280x720 stage (verified in-game at 1920x1080, where the stage is 1.5x the window).
+// Whether the stage is letterboxed or stretched on other aspect ratios is unverified, letterboxed is assumed.
+static constexpr float STAGE_W = 1280.0f;
+static constexpr float STAGE_H = 720.0f;
+
+// world position -> window pixels; map units are world / 32 (x, z), the stage position is pan + mapPos * scale
+static ImVec2 WorldToWindow(const CMap& map, const CVector3f& world)
+{
+    const float stageX = map.panX + world.x / 32.0f * map.mapScale2;
+    const float stageY = map.panY + world.z / 32.0f * map.mapScale2;
+    const ImVec2 size = ImGui::GetIO().DisplaySize;
+    const float k = std::min(size.x / STAGE_W, size.y / STAGE_H);
+    return ImVec2((size.x - STAGE_W * k) * 0.5f + stageX * k, (size.y - STAGE_H * k) * 0.5f + stageY * k);
+}
+
+// gz_nav/assets/Target.svg (viewBox 0 0 20 20) with the group transforms applied: a flag and a pole (the SVG fill is
+// rgb(235,235,235), the overlay uses green for the target). The flag polygon is concave, so it is drawn as two convex pieces.
+static constexpr ImVec2 TARGET_FLAG_RIGHT[] = {{11.5446f, 5.0f}, {16.25f, 3.75f}, {16.25f, 11.5625f}, {11.5446f, 12.8125f}};
+static constexpr ImVec2 TARGET_FLAG_LEFT[] = {{11.5446f, 5.0f}, {11.5446f, 12.8125f}, {6.5625f, 9.6875f}, {6.5625f, 1.875f}};
+static constexpr ImVec2 TARGET_POLE_MIN{5.0f, 1.875f};
+static constexpr ImVec2 TARGET_POLE_MAX{6.5625f, 18.125f};
+static constexpr ImVec2 TARGET_ANCHOR{5.78125f, 18.125f}; // foot of the pole, sits on the target position
+
+// the flag with its pole foot at anchorPos, size is the edge length of the 20x20 icon box in pixels
+static void DrawTargetIcon(ImDrawList* dl, const ImVec2& anchorPos, float size, ImU32 fillColor)
+{
+    const float k = size / 20.0f;
+    const ImVec2 origin(anchorPos.x - TARGET_ANCHOR.x * k, anchorPos.y - TARGET_ANCHOR.y * k);
+
+    // the first pass is a dark drop shadow so the light flag stays readable on the map
+    for (const ImVec2 offset : {ImVec2(1.5f, 1.5f), ImVec2(0.0f, 0.0f)}) {
+        const bool shadow = offset.x != 0.0f;
+        const ImU32 color = shadow ? IM_COL32(0, 0, 0, 170) : fillColor;
+        const auto toWindow = [&](const ImVec2& p) {
+            return ImVec2(origin.x + offset.x + p.x * k, origin.y + offset.y + p.y * k);
+        };
+        const auto fillPiece = [&](const ImVec2 (&piece)[4]) {
+            const ImVec2 points[] = {toWindow(piece[0]), toWindow(piece[1]), toWindow(piece[2]), toWindow(piece[3])};
+            dl->AddConvexPolyFilled(points, 4, color);
+        };
+
+        fillPiece(TARGET_FLAG_RIGHT);
+        fillPiece(TARGET_FLAG_LEFT);
+        dl->AddRectFilled(toWindow(TARGET_POLE_MIN), toWindow(TARGET_POLE_MAX), color);
+    }
+}
+
+// after a guess: the guessed position as our own marker, the target as a rect and a line between them, below the
+// ImGui windows. The guess is drawn here because the user's marker can be moved after guessing.
+void UI::RenderGuessOverlay()
+{
+    const auto* map = CMap::instance();
+    if (!map) {
+        return;
+    }
+
+    const auto* guesser = GuesserGameMode::instance();
+    ImDrawList* dl = ImGui::GetBackgroundDrawList();
+    const ImVec2 markerPos = WorldToWindow(*map, guesser->GetGuessPosition());
+    const ImVec2 targetPos = WorldToWindow(*map, guesser->GetTargetPosition());
+
+    dl->AddLine(markerPos, targetPos, IM_COL32(0, 0, 0, 200), 5.0f);
+    dl->AddLine(markerPos, targetPos, IM_COL32(255, 255, 255, 255), 2.0f);
+
+    // white guess (dark outline for contrast), green target
+    dl->AddCircleFilled(markerPos, 8.0f, IM_COL32(0, 0, 0, 200));
+    dl->AddCircleFilled(markerPos, 6.0f, IM_COL32(255, 255, 255, 255));
+
+    DrawTargetIcon(dl, targetPos, 28.0f, IM_COL32(60, 220, 90, 255));
 }
 
 // borderless layer without background, only the widgets are visible

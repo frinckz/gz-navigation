@@ -17,6 +17,7 @@ class GuesserGameMode
     bool m_guessed = false;         // the current round was guessed, waiting for the next round
     double m_roundScore = 0;        // points of the guessed round
     double m_roundDistance = 0;     // meters between the guess and the target of the guessed round
+    CVector3f m_guessPosition{};    // marker position at the time of the guess, the user's marker can be moved afterwards
 
   public:
     static GuesserGameMode* instance() {
@@ -38,4 +39,6 @@ class GuesserGameMode
     [[nodiscard]] long GetRound() const;
     [[nodiscard]] double GetRoundScore() const;
     [[nodiscard]] double GetRoundDistance() const;
+    [[nodiscard]] const CVector3f& GetTargetPosition() const { return m_targetPosition.position; }
+    [[nodiscard]] const CVector3f& GetGuessPosition() const { return m_guessPosition; }
 };

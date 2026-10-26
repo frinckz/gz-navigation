@@ -107,15 +107,15 @@ namespace gz
 
         float mapCenterX;       // 0x7C
         float mapCenterY;       // 0x80
-        float mapCenterZ;       // 0x84
-        char _pad3[4];          // 0x88
+        float panX;             // 0x84 pan offset in stage px (1280x720), see map_ui_analysis.md
+        float panY;             // 0x88
 
         float cursorScreenX;    // 0x8C - screen X (0,0 at top-left corner)
         float cursorScreenY;    // 0x90 - screen Y (0,0 at top-left corner)
         char _pad4[8];          // 0x98
 
         float mapScale;         // 0x9C (initialized to 24.0f)
-        float mapScale2;        // 0xA0 (initialized to 24.0f)
+        float mapScale2;        // 0xA0 (initialized to 24.0f) stage px per map unit (world / 32)
 
         char        _pad5a[0x7C];       // 0xA4 -> 0x120
         SMapIcon*   m_IconArrayBegin;   // 0x120
@@ -373,5 +373,8 @@ namespace gz
     static_assert(offsetof(CMap, cursorScreenX) == 0x8C, "cursorWorldX offset mismatch!");
     static_assert(offsetof(CMap, cursorScreenY) == 0x90, "cursorWorldY offset mismatch!");
     static_assert(offsetof(CMap, mapScale) == 0x9C, "mapScale offset mismatch!");
+    static_assert(offsetof(CMap, panX) == 0x84, "panX offset mismatch!");
+    static_assert(offsetof(CMap, panY) == 0x88, "panY offset mismatch!");
+    static_assert(offsetof(CMap, mapScale2) == 0xA0, "mapScale2 offset mismatch!");
 } // namespace gz
 #pragma pack(pop)
