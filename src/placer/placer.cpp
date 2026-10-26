@@ -201,13 +201,9 @@ bool Placer::IsVisited(const PlacerLocation& location) {
 }
 
 void Placer::SavePosition(CVector3f position, CVector3f aimPosition) {
-    static constexpr const char* SAVED_NAME = "Saved";
-    static constexpr const char* SAVED_UNKNOWN = "Unknown";
-    m_randomPositions.push_back({ position, aimPosition, { SAVED_NAME, SAVED_UNKNOWN, SAVED_UNKNOWN } });
+    m_randomPositions.push_back({ position, aimPosition, {} });
     std::ofstream file(GetPositionsFilePath(), std::ios::app);
     if (file) {
-        // header so the entry doesn't inherit the metadata of the block above it
-        file << "\n# (" << SAVED_NAME << ", " << SAVED_UNKNOWN << ", " << SAVED_UNKNOWN << ")\n";
         file << std::setprecision(9) << position.x << ' ' << position.y << ' ' << position.z
              << " (" << aimPosition.x << ' ' << aimPosition.y << ' ' << aimPosition.z << ")\n";
     } else {
