@@ -45,6 +45,7 @@ static decltype(WndProc) *                pfn_WndProc     = nullptr;
 
 LRESULT WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    g_gameWindow = hwnd;
     bool isInGame = GameState::IsInGame();
 
     if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))

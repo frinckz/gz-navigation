@@ -42,6 +42,7 @@ bool GuesserGameMode::Guess() {
 }
 
 void GuesserGameMode::ResetToTarget() {
+    gz::CMap::Close();
     auto* gameWorld = gz::CGameWorld::instance();
     if (!gameWorld) {
         return;
@@ -63,6 +64,7 @@ static std::vector<PlacerLocation> UnvisitedCandidates() {
 void GuesserGameMode::AdvanceToNextRound() {
     m_round++;
     m_guessed = false;
+    gz::CMap::Close();
     // the teleport may still be running (fast travel), so the chosen position is the target, not the player position
     if (auto placed = Placer::instance()->Place(UnvisitedCandidates())) {
         m_targetPosition = *placed;

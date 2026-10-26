@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <Windows.h>
 
 #include "addresses.h"
 #include "data_types.h"
@@ -68,6 +69,7 @@ namespace gz
 
     class CMap;
 
+    inline HWND g_gameWindow = nullptr; // set by the WndProc hook
     inline bool g_fastTravelAnywhereEnabled = true;
     inline bool g_hidePlayerMapIcon = true;
     inline bool g_disableMapFocusOnPlayer = true;
@@ -165,6 +167,16 @@ namespace gz
         {
             const auto* map = instance();
             return map && map->GetMapState() == MAP_STATE_OPEN;
+        }
+
+        // Closes the map screen by sending Escape to the game window; does nothing while the map is closed
+        // (Escape would open the pause menu instead). UNTESTED in-game.
+        static void Close()
+        {
+            if (!g_gameWindow || !IsOpen()) return;
+            constexpr LPARAM scanCode = 0x01; // Escape
+            PostMessage(g_gameWindow, WM_KEYDOWN, VK_ESCAPE, 1 | (scanCode << 16));
+            PostMessage(g_gameWindow, WM_KEYUP, VK_ESCAPE, 1 | (scanCode << 16) | (1 << 30) | (1u << 31));
         }
 
         static CVector2f WorldToMapPosition(float worldX, float worldZ)
