@@ -24,6 +24,11 @@ class Placer {
 
   public:
     static std::vector<PlacerLocation> m_randomPositions;
+    // The newest visited locations, loaded from visited_locations.txt
+    static std::vector<PlacerLocation> m_visitedPositions;
+
+    // True if the player was already placed at this location (matched by position)
+    static bool IsVisited(const PlacerLocation& location);
 
     static Placer* instance() {
         static Placer instance;

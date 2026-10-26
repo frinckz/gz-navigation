@@ -8,10 +8,6 @@
 const float MAX_X = 5000;
 const float MAX_Y = 5000;
 
-const float MIN_DISTANCE_CANDIDATE = 100;
-
-const size_t MAX_POSITION_BUFFER = 3;
-
 const double MAX_SCORE = 100;
 const double PERFECT_DISTANCE = 5;        // meters
 const double SCORE_DECAY_DISTANCE = 500;  // meters, the score drops to ~37% per this distance
@@ -33,21 +29,18 @@ void GuesserGameMode::Guess(CVector3f position) {
     // TODO: Show score on map
 }
 
-void GuesserGameMode::AdvanceToNextRound() {
-    m_positionBuffer.push_back(m_targetPosition);
-    if (m_positionBuffer.size() > MAX_POSITION_BUFFER) {
-        m_positionBuffer.erase(m_positionBuffer.begin());
-    }
+// Available locations that were not visited yet; once everything was visited all locations are allowed again
+static std::vector<PlacerLocation> UnvisitedCandidates() {
     std::vector<PlacerLocation> candidates{};
     std::copy_if(Placer::m_randomPositions.begin(), Placer::m_randomPositions.end(),
-                 std::back_inserter(candidates), [this](const PlacerLocation& pos) {
-                     return std::all_of(m_positionBuffer.begin(), m_positionBuffer.end(), [&pos](const PlacerLocation& bufferedPos) {
-                         return calculateDistance(pos.position, bufferedPos.position) > MIN_DISTANCE_CANDIDATE;
-                     });
-                 });
+                 std::back_inserter(candidates), [](const PlacerLocation& pos) { return !Placer::IsVisited(pos); });
+    return candidates.empty() ? Placer::m_randomPositions : candidates;
+}
+
+void GuesserGameMode::AdvanceToNextRound() {
     m_round++;
     // the teleport may still be running (fast travel), so the chosen position is the target, not the player position
-    if (auto placed = Placer::instance()->Place(candidates)) {
+    if (auto placed = Placer::instance()->Place(UnvisitedCandidates())) {
         m_targetPosition = *placed;
     }
 }
@@ -61,5 +54,7 @@ double GuesserGameMode::GetScore() const {
 }
 
 void GuesserGameMode::Start() {
-    Placer::instance()->Place();
+    if (auto placed = Placer::instance()->Place(UnvisitedCandidates())) {
+        m_targetPosition = *placed;
+    }
 }

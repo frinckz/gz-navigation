@@ -13,6 +13,7 @@
 #include <sstream>
 
 std::vector<PlacerLocation> Placer::m_randomPositions = {};
+std::vector<PlacerLocation> Placer::m_visitedPositions = {};
 
 // the visited file keeps at most this many times the number of available locations
 static constexpr size_t VISITED_LIMIT_FACTOR = 2;
@@ -129,6 +130,11 @@ void Placer::AppendVisitedLocation(const PlacerLocation& location) {
         lines.erase(lines.begin(), lines.end() - maxLines);
     }
 
+    m_visitedPositions.push_back(location);
+    if (m_visitedPositions.size() > maxLines / VISITED_RECORD_LINES) {
+        m_visitedPositions.erase(m_visitedPositions.begin(), m_visitedPositions.end() - maxLines / VISITED_RECORD_LINES);
+    }
+
     std::ofstream out(GetVisitedFilePath(), std::ios::trunc);
     if (!out) {
         gz::Log("Placer: failed to write visited location %s", GetVisitedFilePath().c_str());
@@ -149,9 +155,10 @@ std::optional<PlacerLocation> Placer::Place(std::vector<PlacerLocation> position
     return RandomizePosition(positions);
 }
 
-void Placer::ReloadSavedPositions() {
-    m_randomPositions.clear();
-    std::ifstream file(GetPositionsFilePath());
+// Reads all locations of a file in the format described above
+static std::vector<PlacerLocation> LoadLocations(const std::string& path) {
+    std::vector<PlacerLocation> locations;
+    std::ifstream file(path);
     std::string line;
     size_t lineNumber = 0;
     PlacerLocationMetadata meta;
@@ -171,12 +178,25 @@ void Placer::ReloadSavedPositions() {
         entry.locationMetadata = meta;
         if (stream >> entry.position.x >> entry.position.y >> entry.position.z
                    >> entry.aimPosition.x >> entry.aimPosition.y >> entry.aimPosition.z) {
-            m_randomPositions.push_back(entry);
+            locations.push_back(entry);
         } else {
-            gz::Log("Placer: ignoring invalid line %zu in %s", lineNumber, GetPositionsFilePath().c_str());
+            gz::Log("Placer: ignoring invalid line %zu in %s", lineNumber, path.c_str());
         }
     }
-    gz::Log("Placer: loaded %zu saved positions", m_randomPositions.size());
+    return locations;
+}
+
+void Placer::ReloadSavedPositions() {
+    m_randomPositions = LoadLocations(GetPositionsFilePath());
+    m_visitedPositions = LoadLocations(GetVisitedFilePath());
+    gz::Log("Placer: loaded %zu saved positions, %zu visited", m_randomPositions.size(), m_visitedPositions.size());
+}
+
+bool Placer::IsVisited(const PlacerLocation& location) {
+    return std::any_of(m_visitedPositions.begin(), m_visitedPositions.end(), [&location](const PlacerLocation& visited) {
+        return visited.position.x == location.position.x && visited.position.y == location.position.y
+            && visited.position.z == location.position.z;
+    });
 }
 
 void Placer::SavePosition(CVector3f position, CVector3f aimPosition) {

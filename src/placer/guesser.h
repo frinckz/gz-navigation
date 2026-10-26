@@ -13,7 +13,6 @@ class GuesserGameMode
     PlacerLocation m_targetPosition{};
     double m_score = 0;
     long m_round = 0;
-    std::vector<PlacerLocation> m_positionBuffer;
 
   public:
     static GuesserGameMode* instance() {
