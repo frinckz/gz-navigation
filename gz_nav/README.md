@@ -2,19 +2,16 @@
 
 ## Install
 
-1. Copy mods folder to the same folder where exe is located.
+1. Copy the folder to the same folder where exe is located.
 2. Run (double-click) `install.bat`
 
 ```
 |- ...
 |- GenerationZero_F.exe
-|- gz_nav
+|- gz_nav/
     |- install.bat
-    |- locations.txt
-    |- README.md
-    |- settings.ini
     |- uninstall.bat
-    |- xinput9_1_0.dll
+    |- ...
 ```
 
 ## Uninstall
@@ -23,5 +20,7 @@
 
 ## Usage
 
-1. Configure game via `settings.ini`
-2. Start game
+1. Select mode setting `mode` in `settings.ini`
+   * `mode=0` Normal mode
+   * `mode=1` Guesser mode (Hint: Use map to make a guess)
+2. Start Game

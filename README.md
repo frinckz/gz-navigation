@@ -9,7 +9,7 @@ Written in C++ and based on [gz-console-thingy](./gz-console-thingy.md).
 ## Modes
 
 **Location Guesser:**
-1. Player is transported to a specific location
+1. Player is transported to one of 200 random, handpicked locations
 2. They have to mark and confirm it on the map
 3. A score is calculated based on the distance from the actual position
 
