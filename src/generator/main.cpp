@@ -997,6 +997,16 @@ FindPatternResult Generate(const char* name, const char* exepath)
         return rebase(game_file, match);
     });
 
+    // CMap::InitRegions(this = CMap + 0x10): sends one region (border spline, label) per call to the UI, the player's
+    // current region only when its flag is set
+    FindPattern("MAP_INIT_REGIONS", game_file, result, [&] {
+        auto match = pattern("48 8B C4 55 57 41 54 41 56 41 57 48 8D 6C 24 A0 48 81 EC 60 01 00 00 48 C7 45 00 FE FF FF FF 48 89 58 10 48 89 70 18 0F 29 70 C8 0F 29 78 B8 44 0F 29 40 A8", game_file)
+            .count(1)
+            .get(0)
+            .as<uintptr_t>();
+        return rebase(game_file, match);
+    });
+
     // CNotificationPopup::QueueNotification(this, type, param, ...): queues a popup (e.g. location discovered / location summary)
     FindPattern("NOTIFICATION_POPUP_QUEUE", game_file, result, [&] {
         auto match = pattern("4C 89 4C 24 20 44 89 44 24 18 89 54 24 10 48 89 4C 24 08 48 81 EC 98 01 00 00", game_file)

@@ -211,6 +211,7 @@ bool InitPatchesAndHooks()
         bool playerIconHooksOk = true;
         playerIconHooksOk &= CMap::SetupUpdatePOIHook();
         playerIconHooksOk &= CMap::SetupInitPOIsHook();
+        playerIconHooksOk &= CMap::SetupInitRegionsHook();
         if (!playerIconHooksOk) Log("Failed to setup player map icon hooks");
 
         if (!Intro::SetupIntroComplete())

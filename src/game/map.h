@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstddef>
+#include <utility>
+#include <vector>
 #include <Windows.h>
 
 #include "addresses.h"
@@ -80,6 +82,9 @@ namespace gz
     inline UpdatePOIFunc_t g_origUpdatePOI = nullptr;
     using InitPOIsFunc_t = void(*)(CMap*);
     inline InitPOIsFunc_t g_origInitPOIs = nullptr;
+    using InitRegionsFunc_t = void(*)(void*);
+    inline InitRegionsFunc_t g_origInitRegions = nullptr;
+    inline bool g_hidePlayerRegionBorder = true;
 
     using IsAllowedInRegionFunc_t = bool(*)(CMap*, CVector3f*);
     inline IsAllowedInRegionFunc_t g_origIsAllowedInRegion = nullptr;
@@ -311,6 +316,56 @@ namespace gz
         {
             if (g_origInitPOIs) return true;
             return MH_CreateHookGZ(MAP_INIT_POIS, &HookedInitPOIs, &g_origInitPOIs);
+        }
+
+
+        // -- hide the border of the region the player is in
+        // CMap::InitRegions (this = CMap + 0x10) sends one region per call to the UI (border spline, label). A region
+        // is sent if its "always visible" flag is set, or if its "show if current" flag is set and it is the region
+        // the player is in. The flag of the second kind is cleared around the call.
+        static constexpr size_t REGIONS_BEGIN_OFFSET            = 0x5B0; // CRegion** array begin
+        static constexpr size_t REGIONS_END_OFFSET              = 0x5B8; // CRegion** array end
+        static constexpr size_t REGION_SHOW_IF_CURRENT_OFFSET   = 0x1F4; // uint8_t
+        static constexpr size_t REGION_ALWAYS_VISIBLE_OFFSET    = 0x1F6; // uint8_t
+        static constexpr size_t MAX_REGIONS                     = 256;   // sanity limit for the region array
+
+        static void HookedInitRegions(void* thisPtr)
+        {
+            std::vector<std::pair<uint8_t*, uint8_t>> cleared;
+
+            if (g_hidePlayerRegionBorder && thisPtr)
+            {
+                auto* base = static_cast<uint8_t*>(thisPtr);
+                auto** begin = *reinterpret_cast<uint8_t***>(base + REGIONS_BEGIN_OFFSET);
+                auto** end = *reinterpret_cast<uint8_t***>(base + REGIONS_END_OFFSET);
+
+                if (begin && end >= begin && static_cast<size_t>(end - begin) <= MAX_REGIONS)
+                {
+                    for (auto** it = begin; it != end; ++it)
+                    {
+                        uint8_t* region = *it;
+                        if (!region || region[REGION_ALWAYS_VISIBLE_OFFSET]) continue;
+
+                        uint8_t* showIfCurrent = region + REGION_SHOW_IF_CURRENT_OFFSET;
+                        if (!*showIfCurrent) continue;
+                        cleared.emplace_back(showIfCurrent, *showIfCurrent);
+                        *showIfCurrent = 0;
+                    }
+                }
+            }
+
+            g_origInitRegions(thisPtr);
+
+            for (const auto& [flag, value] : cleared)
+            {
+                *flag = value;
+            }
+        }
+
+        static bool SetupInitRegionsHook()
+        {
+            if (g_origInitRegions) return true;
+            return MH_CreateHookGZ(MAP_INIT_REGIONS, &HookedInitRegions, &g_origInitRegions);
         }
     };
     static_assert(sizeof(CMap) == 0x6F8, "CMap size mismatch!");
