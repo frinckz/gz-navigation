@@ -80,16 +80,6 @@ namespace gz
                 return;
             }
 
-            UI* ui = UI::Get();
-            ConsoleSettings& settings = ui->GetSettings();
-
-            if (settings.hackingAlwaysSucceeds)
-                requestData->hackSuccessProbability = 10.0f;
-            if (settings.unlimitedHackingTime)
-                requestData->hackDurationMs = 10000000; // 2.7 hours
-            if (settings.alwaysAdvancedHacking)
-                requestData->hasAdvancedHackSkill = 1;
-
             bool isAdvancedHack = requestData->hasAdvancedHackSkill != 0;
 
             g_requestHack(comp, requestData);

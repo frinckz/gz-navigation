@@ -1,7 +1,6 @@
 #pragma once
 
 #include "imgui.h"
-#include "ui_settings.h"
 
 #include <Windows.h>
 
@@ -29,55 +28,12 @@ namespace gz
         void SetVisible(bool visible);
         void ToggleVisible() { SetVisible(!m_visible); }
 
-        ConsoleSettings& GetSettings() { return m_settings; }
-        static bool HandleHotkeyCapture(WPARAM wParam);
-
-        // helper functions for tabs to use
-        static void HelpMarker(const char* desc, const char* warning = nullptr);
-        static void HelpMarker(const char* desc, const std::vector<const char*>& warnings);
-        static void HoverTooltip(const char* text, const char* warning = nullptr);
-        static void InfoText(const char* text, const char* warning = nullptr);
-        static void InfoText(const char* text, const std::vector<const char*>& warnings);
-        static void StartWarningText();
-        static void EndWarningText();
-        static void WarningText(const char* text, bool wrap = false);
-        static void StartDisabledText() { ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]); }
-        static void EndDisabledText() { ImGui::PopStyleColor(); }
-
-        static void GetHealthModification(CDamageable* damageable, const char* identifier, const char* invulTip,
-                                   const char* healthNote = "", const char* reviveLabel = "", const char* reviveTip = "",
-                                   std::function<void()> onRevive = []() {});
-
-        bool m_isCapturingToggleUI = false;
-        bool m_isCapturingTeleportKey = false;
-        bool m_isCapturingHideHUDKey = false;
-        bool m_isCapturingThirdPersonKey = false;
-        bool m_isCapturingSavePositionKey = false;
-        bool m_isCapturingRandomizePositionKey = false;
-
     private:
         UI() = default;
         ~UI() = default;
 
         bool m_visible = false;
         bool m_initialized = false;
-
-        ConsoleSettings m_settings;
-
-        // ImGui settings handlers
-        static void* SettingsHandlerReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name);
-        static void SettingsHandlerReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line);
-        static void SettingsHandlerWriteAll(ImGuiContext*, ImGuiSettingsHandler*, ImGuiTextBuffer* buf);
-        static void RenderHelpMarkerButton();
     };
-
-    // tab rendering functions (implemented in separate files)
-    namespace UITabs
-    {
-        void RenderPlayerTab(CNetworkPlayerManager* manager);
-        void RenderWorldTab(CNetworkPlayerManager* manager);
-        void RenderMachineTab(CNetworkPlayerManager* manager);
-        void RenderSettingsTab();
-    }
 
 } // namespace gz

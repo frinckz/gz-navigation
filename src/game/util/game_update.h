@@ -26,9 +26,6 @@ namespace gz::Utils
         // custom logic that needs to run every game update
         if (GameState::IsInGame())
         {
-            UI* ui = UI::Get();
-            ConsoleSettings& settings = ui->GetSettings();
-
             if (CNetworkPlayerManager* networkPlayerManager = CNetworkPlayerManager::instance())
             {
                 CCharacter* playerCharacter = networkPlayerManager->GetCharacter();
@@ -58,37 +55,6 @@ namespace gz::Utils
                     CharacterTasks::g_jumpSeededThisFrame = false;
                     if (ThirdPersonCamera::NeedsRepush())
                         ThirdPersonCamera::Reapply();
-                }
-            }
-
-            // update vehicle invulnerability status
-            if (CVehicleManager* vehicleManager = CVehicleManager::instance())
-            {
-                if (CVehicle* vehicle = vehicleManager->GetPlayerVehicle())
-                {
-                    CDamageable* vehicleDamageable = vehicle->GetDamageable();
-                    if (settings.enableInfiniteBikeHealth && !vehicleDamageable->IsInvulnerable())
-                    {
-                        vehicleDamageable->SetInvulnerable(true);
-                    }
-                }
-            }
-
-            // update time to mirror real time if setting enabled
-            if (settings.mirrorRealTime)
-            {
-                if (CWorldTime* worldTime = CWorldTime::instance())
-                {
-                    const auto now = std::chrono::system_clock::now();
-                    const auto time = std::chrono::system_clock::to_time_t(now);
-                    std::tm localTime;
-                    localtime_s(&localTime, &time);
-
-                    const float fractionalHour = static_cast<float>(localTime.tm_hour) +
-                      static_cast<float>(localTime.tm_min) / 60.0f +
-                      static_cast<float>(localTime.tm_sec) / 3600.0f;
-
-                    worldTime->SetTime(fractionalHour);
                 }
             }
 

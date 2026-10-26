@@ -64,7 +64,7 @@ target_sources(meow-hook PRIVATE ${MEOW_HOOK_SOURCES})
 # xinput9_1_0 main project (DLL)
 #
 add_library(xinput9_1_0 SHARED)
-target_compile_definitions(xinput9_1_0 PRIVATE NOMINMAX)
+target_compile_definitions(xinput9_1_0 PRIVATE NOMINMAX $<$<CONFIG:Debug>:GZ_SKIP_INTRO>)
 target_include_directories(xinput9_1_0 PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/generated
     src

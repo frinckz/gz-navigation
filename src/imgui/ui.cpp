@@ -1,12 +1,9 @@
 #include "ui.h"
 #include "log.h"
 
-#include "game/player_network_manager.h"
-
 #include <imgui.h>
 #include "imgui_internal.h"
-#include "version.h"
-#include "game/damageable.h"
+#include "game/custom/tp_state.h"
 #include "game/game_state.h"
 #include "game/input_manager.h"
 
@@ -25,7 +22,7 @@ void UI::Initialize()
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
 
-    io.IniFilename = "GZConsoleThingy.ini";
+    io.IniFilename = nullptr; // no ini persistence
 
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -33,19 +30,6 @@ void UI::Initialize()
     io.MouseDrawCursor = false;
 
     SetupUiLook();
-
-    // set default settings
-    m_settings.ApplyDefaults();
-
-    // register custom settings handler
-    ImGuiSettingsHandler ini_handler;
-    ini_handler.TypeName = "GZConsoleThingy";
-    ini_handler.TypeHash = ImHashStr("GZConsoleThingy");
-    ini_handler.ReadOpenFn = SettingsHandlerReadOpen;
-    ini_handler.ReadLineFn = SettingsHandlerReadLine;
-    ini_handler.WriteAllFn = SettingsHandlerWriteAll;
-    ini_handler.UserData = this;
-    ImGui::AddSettingsHandler(&ini_handler);
 
     m_initialized = true;
     Log("ImGui initialized successfully");
@@ -137,65 +121,6 @@ void UI::SetVisible(bool visible)
     }
 }
 
-bool UI::HandleHotkeyCapture(WPARAM wParam)
-{
-    UI* ui = Get();
-
-    if (!ui->m_isCapturingToggleUI && !ui->m_isCapturingTeleportKey && !ui->m_isCapturingHideHUDKey && !ui->m_isCapturingThirdPersonKey
-        && !ui->m_isCapturingSavePositionKey && !ui->m_isCapturingRandomizePositionKey) {
-        return false;
-    }
-
-    if (!ConsoleSettings::IsValidKey(static_cast<int>(wParam))) {
-        return true;
-    }
-
-    if (ui->m_isCapturingToggleUI)
-    {
-        ui->m_settings.toggleUIKey = static_cast<int>(wParam);
-        ui->m_isCapturingToggleUI = false;
-        ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
-        Log("Toggle UI key bound to: %s", ConsoleSettings::GetKeyName(static_cast<int>(wParam)).c_str());
-    }
-    else if (ui->m_isCapturingTeleportKey)
-    {
-        ui->m_settings.teleportToAimKey = static_cast<int>(wParam);
-        ui->m_isCapturingTeleportKey = false;
-        ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
-        Log("Teleport to Aim key bound to: %s", ConsoleSettings::GetKeyName(static_cast<int>(wParam)).c_str());
-    }
-    else if (ui->m_isCapturingHideHUDKey)
-    {
-        ui->m_settings.hideHUDKey = static_cast<int>(wParam);
-        ui->m_isCapturingHideHUDKey = false;
-        ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
-        Log("Hide HUD key bound to: %s", ConsoleSettings::GetKeyName(static_cast<int>(wParam)).c_str());
-    }
-    else if (ui->m_isCapturingThirdPersonKey)
-    {
-        ui->m_settings.thirdPersonKey = static_cast<int>(wParam);
-        ui->m_isCapturingThirdPersonKey = false;
-        ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
-        Log("Third Person key bound to: %s", ConsoleSettings::GetKeyName(static_cast<int>(wParam)).c_str());
-    }
-    else if (ui->m_isCapturingSavePositionKey)
-    {
-        ui->m_settings.savePositionKey = static_cast<int>(wParam);
-        ui->m_isCapturingSavePositionKey = false;
-        ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
-        Log("Save Position key bound to: %s", ConsoleSettings::GetKeyName(static_cast<int>(wParam)).c_str());
-    }
-    else if (ui->m_isCapturingRandomizePositionKey)
-    {
-        ui->m_settings.placePositionKey       = static_cast<int>(wParam);
-        ui->m_isCapturingRandomizePositionKey = false;
-        ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
-        Log("Randomize Position key bound to: %s", ConsoleSettings::GetKeyName(static_cast<int>(wParam)).c_str());
-    }
-
-    return true;
-}
-
 void UI::Render()
 {
     if (!m_initialized) {
@@ -237,250 +162,7 @@ void UI::Render()
 
     ImGui::Begin("Generation Zero Console Thingy");
 
-    auto* playerMgr = CNetworkPlayerManager::instance();
-
-    if (!playerMgr) {
-        ImGui::Text("Error: CNetworkPlayerManager instance not found.");
-        ImGui::End();
-        return;
-    }
-
-    auto* networkPlayer = playerMgr->GetNetworkPlayer();
-
-    ImGui::Spacing();
-    ImGui::Text("Hello, %s!", networkPlayer->GetProfileName().c_str());
-
-    char versionText[16];
-    snprintf(versionText, sizeof(versionText), "v%s", VERSION_STRING);
-    float textWidth = ImGui::CalcTextSize(versionText).x;
-    ImGui::SameLine(ImGui::GetContentRegionAvail().x - textWidth + ImGui::GetCursorPosX());
-    ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), "%s", versionText);
-
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
-
-    if (ImGui::BeginTabBar("##tabs", ImGuiTabBarFlags_None)) {
-        if (ImGui::BeginTabItem("Player")) {
-            ImGui::BeginChild("PlayerContent", ImVec2(0, 0), false);
-            ImGui::Spacing();
-            UITabs::RenderPlayerTab(playerMgr);
-            ImGui::EndChild();
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Machines")) {
-            ImGui::BeginChild("MachineContent", ImVec2(0, 0), false);
-            ImGui::Spacing();
-            UITabs::RenderMachineTab(playerMgr);
-            ImGui::EndChild();
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("World")) {
-            ImGui::BeginChild("WorldContent", ImVec2(0, 0), false);
-            ImGui::Spacing();
-            UITabs::RenderWorldTab(playerMgr);
-            ImGui::EndChild();
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Settings")) {
-            ImGui::BeginChild("SettingsContent", ImVec2(0, 0), false);
-            ImGui::Spacing();
-            UITabs::RenderSettingsTab();
-            ImGui::EndChild();
-            ImGui::EndTabItem();
-        }
-        ImGui::EndTabBar();
-    }
-
     ImGui::End();
 }
 
-// Helper functions
-void UI::HelpMarker(const char* desc, const char* warning)
-{
-    RenderHelpMarkerButton();
-
-    if (ImGui::BeginItemTooltip())
-    {
-        InfoText(desc, warning);
-        ImGui::EndTooltip();
-    }
-}
-// help marker with array of bullet points for warning
-void UI::HelpMarker(const char* desc, const std::vector<const char*>& warnings)
-{
-    RenderHelpMarkerButton();
-
-    if (ImGui::BeginItemTooltip())
-    {
-        InfoText(desc, warnings);
-        ImGui::EndTooltip();
-    }
-}
-
-void UI::RenderHelpMarkerButton()
-{
-    static int s_counter = 0;
-    static int s_lastFrame = -1;
-
-    if (const int frame = ImGui::GetFrameCount(); frame != s_lastFrame) {
-        s_counter = 0;
-        s_lastFrame = frame;
-    }
-
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
-    ImGui::PushID(s_counter++);
-    ImGui::SmallButton("(?)");
-    ImGui::PopID();
-    ImGui::PopStyleColor(4);
-    ImGui::PopStyleVar();
-}
-
-void UI::HoverTooltip(const char* text, const char* warning)
-{
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        InfoText(text, warning);
-        ImGui::EndTooltip();
-    }
-}
-
-void UI::InfoText(const char* text, const char* warning)
-{
-    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-    ImGui::TextUnformatted(text);
-
-    if (warning)
-    {
-        ImGui::Separator();
-        WarningText(warning);
-    }
-
-    ImGui::PopTextWrapPos();
-}
-// info text with array of bullet points for warning
-void UI::InfoText(const char* text, const std::vector<const char*>& warnings)
-{
-    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-    ImGui::TextUnformatted(text);
-
-    if (!warnings.empty())
-    {
-        ImGui::Separator();
-        for (const char* warning : warnings)
-        {
-            StartWarningText();
-            ImGui::Bullet();
-            ImGui::SameLine();
-            ImGui::Text("%s", warning);
-            EndWarningText();
-        }
-    }
-}
-
-void UI::StartWarningText()
-{
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.0f, 1.0f));
-}
-
-void UI::EndWarningText()
-{
-    ImGui::PopStyleColor();
-}
-
-void UI::WarningText(const char* text, bool wrap)
-{
-    StartWarningText();
-    if (wrap)
-    {
-        ImGui::TextWrapped("%s", text);
-    }
-    else
-    {
-        ImGui::Text("%s", text);
-    }
-    EndWarningText();
-}
-
-// ImGui settings handlers
-void* UI::SettingsHandlerReadOpen(ImGuiContext*, ImGuiSettingsHandler* handler, const char* name)
-{
-    if (strcmp(name, "Settings") == 0) {
-        UI* ui = (UI*)handler->UserData;
-        return &ui->m_settings;
-    }
-    return nullptr;
-}
-
-void UI::SettingsHandlerReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line)
-{
-    auto* settings = (ConsoleSettings*)entry;
-    settings->ReadLine(line);
-}
-
-void UI::SettingsHandlerWriteAll(ImGuiContext*, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
-{
-    UI* ui = (UI*)handler->UserData;
-    buf->appendf("[%s][Settings]\n", handler->TypeName);
-    ui->m_settings.WriteAll(buf);
-    buf->append("\n");
-}
-
-void UI::GetHealthModification(CDamageable* damageable, const char* identifier, const char* invulTip, const char* healthNote,
-const char* reviveLabel, const char* reviveTip, std::function<void()> onRevive)
-{
-    std::string identifierStr = std::string(identifier);
-    int currentHealth = damageable->GetHealth();
-    int maxHealth = damageable->GetMaxHealth();
-    int healthPercent = damageable->GetHealthInPercentage();
-
-    ImGui::Text("Current: %d / %d (%d%%)", currentHealth, maxHealth, healthPercent);
-
-    if (!damageable->IsDestroyed() || identifierStr != "character") // only characters can be revived
-    {
-        if (ImGui::SliderInt(("Health (%)##" + identifierStr).c_str(), &healthPercent, 0, 100)) {
-            damageable->SetHealthInPercentage(healthPercent);
-        }
-        ImGui::SameLine();
-        if (strlen(healthNote) > 0) {
-            UI::HelpMarker("Sets health as a percentage of max health.", healthNote);
-        } else
-        {
-            UI::HelpMarker("Sets health as a percentage of max health.");
-        }
-        if (ImGui::Button(("Restore Full Health##" + identifierStr).c_str())) {
-            damageable->RestoreHealth();
-        }
-    }
-    // if destroyed (and not a vehicle), show revive button
-    else
-    {
-        if (ImGui::Button((reviveLabel + std::string("##") + identifierStr).c_str())) {
-            onRevive();
-        }
-        ImGui::SameLine();
-        UI::HelpMarker(reviveTip);
-    }
-
-    // invulnerability
-    bool invulnerable = damageable->IsInvulnerable();
-    if (ImGui::Checkbox(("Invulnerable##" + identifierStr).c_str(), &invulnerable)) {
-        damageable->SetInvulnerable(invulnerable, identifierStr == "character" ? 'p' : 0);
-        // save setting for vehicles
-        if (identifierStr == "vehicle")
-        {
-            UI* ui = UI::Get();
-            ConsoleSettings& settings = ui->GetSettings();
-            settings.enableInfiniteBikeHealth = invulnerable;
-            ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
-        }
-    }
-    ImGui::SameLine();
-    UI::HelpMarker(invulTip);
-}
 } // namespace gz

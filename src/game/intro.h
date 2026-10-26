@@ -11,11 +11,11 @@ namespace gz::Intro
 
     inline bool HookedIntroComplete(void* cTitleUi)
     {
-        const auto settings = UI::Get()->GetSettings();
-        if (settings.quickerStartup) {
-            return true;
-        }
+#ifdef GZ_SKIP_INTRO // defined for Debug configs only (see CMakeLists.txt)
+        return true;
+#else
         return g_introComplete(cTitleUi);
+#endif
     }
 
     inline bool SetupIntroComplete()

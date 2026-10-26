@@ -25,7 +25,7 @@ namespace gz
     inline UpdateVisibilityShowFunc g_updVisShow = nullptr;
 
     inline bool g_hudIsVisible = false; // hud is visible internally
-    inline bool g_hideHud = false; // user wants to hide hud
+    inline bool g_hideHud = true;  // user wants to hide hud
 
     struct SUIScene
     {

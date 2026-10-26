@@ -9,7 +9,7 @@
 namespace gz
 {
 
-    inline bool g_forceSpawnLocationValid = false;
+    inline bool g_forceSpawnLocationValid = true;
 
     class CControlPointSpawned;
     using AlignToGridFunc_t = bool(*)(CControlPointSpawned* zone, CVector3f* inPos, CMatrix4f* outMatrix, uint8_t buildType, void* dimensions, uint8_t quadrant);
