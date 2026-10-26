@@ -11,7 +11,7 @@
 #include <iomanip>
 #include <sstream>
 
-std::vector<RandomPosition> Placer::m_randomPositions = {};
+std::vector<PlacerLocation> Placer::m_randomPositions = {};
 
 // day and night are both 12 hours long, so day is DAY_WEIGHT times as likely per hour as night
 static constexpr float DAY_START  = 6.0f;
@@ -42,18 +42,50 @@ static float UniformRange(float min, float max) {
     return std::uniform_real_distribution<float>(min, max)(Rng());
 }
 
-// File format: one entry per line, "x y z (mouse.x mouse.y mouse.z)"; '#' starts a comment, empty lines are ignored
+// File format: one entry per line, "x y z (aim.x aim.y aim.z)"; empty lines are ignored.
+// A header line "# (<name>, <region>, <type>)" sets the metadata of all entries below it;
+// any other '#' line (or trailing '#' text) is a comment.
 std::string Placer::GetPositionsFilePath() {
     char modulePath[MAX_PATH];
     GetModuleFileNameA(nullptr, modulePath, MAX_PATH);
-    return (std::filesystem::path(modulePath).parent_path() / "gz_nav" / "positions.txt").string();
+    return (std::filesystem::path(modulePath).parent_path() / "gz_nav" / "locations" / "available_locations.txt").string();
+}
+
+static std::string Trim(const std::string& s) {
+    const size_t begin = s.find_first_not_of(" \t\r");
+    if (begin == std::string::npos) {
+        return "";
+    }
+    return s.substr(begin, s.find_last_not_of(" \t\r") - begin + 1);
+}
+
+// Parses "# (<name>, <region>, <type>)"; returns false for any other line
+static bool ParseMetaHeader(const std::string& line, PlacerLocationMetadata& meta) {
+    const std::string trimmed = Trim(line);
+    if (trimmed.empty() || trimmed[0] != '#') {
+        return false;
+    }
+    const std::string body = Trim(trimmed.substr(1));
+    if (body.size() < 2 || body.front() != '(' || body.back() != ')') {
+        return false;
+    }
+    const std::string inner = body.substr(1, body.size() - 2);
+    const size_t first = inner.find(',');
+    const size_t second = first == std::string::npos ? first : inner.find(',', first + 1);
+    if (second == std::string::npos || inner.find(',', second + 1) != std::string::npos) {
+        return false;
+    }
+    meta.name = Trim(inner.substr(0, first));
+    meta.region = Trim(inner.substr(first + 1, second - first - 1));
+    meta.type = Trim(inner.substr(second + 1));
+    return true;
 }
 
 Placer::Placer() {
     ReloadSavedPositions();
 }
 
-std::optional<RandomPosition> Placer::Place(std::vector<RandomPosition> positions) {
+std::optional<PlacerLocation> Placer::Place(std::vector<PlacerLocation> positions) {
     RandomizeTime();
     RandomizeWeather();
     return RandomizePosition(positions);
@@ -64,8 +96,12 @@ void Placer::ReloadSavedPositions() {
     std::ifstream file(GetPositionsFilePath());
     std::string line;
     size_t lineNumber = 0;
+    PlacerLocationMetadata meta;
     while (std::getline(file, line)) {
         lineNumber++;
+        if (ParseMetaHeader(line, meta)) {
+            continue;
+        }
         // everything after '#' is a comment
         line = line.substr(0, line.find('#'));
         if (line.find_first_not_of(" \t\r") == std::string::npos) {
@@ -73,7 +109,8 @@ void Placer::ReloadSavedPositions() {
         }
         std::replace_if(line.begin(), line.end(), [](char c) { return c == '(' || c == ')'; }, ' ');
         std::istringstream stream(line);
-        RandomPosition entry{};
+        PlacerLocation entry{};
+        entry.locationMetadata = meta;
         if (stream >> entry.position.x >> entry.position.y >> entry.position.z
                    >> entry.aimPosition.x >> entry.aimPosition.y >> entry.aimPosition.z) {
             m_randomPositions.push_back(entry);
@@ -85,9 +122,13 @@ void Placer::ReloadSavedPositions() {
 }
 
 void Placer::SavePosition(CVector3f position, CVector3f aimPosition) {
-    m_randomPositions.push_back({ position, aimPosition });
+    static constexpr const char* SAVED_NAME = "Saved";
+    static constexpr const char* SAVED_UNKNOWN = "Unknown";
+    m_randomPositions.push_back({ position, aimPosition, { SAVED_NAME, SAVED_UNKNOWN, SAVED_UNKNOWN } });
     std::ofstream file(GetPositionsFilePath(), std::ios::app);
     if (file) {
+        // header so the entry doesn't inherit the metadata of the block above it
+        file << "\n# (" << SAVED_NAME << ", " << SAVED_UNKNOWN << ", " << SAVED_UNKNOWN << ")\n";
         file << std::setprecision(9) << position.x << ' ' << position.y << ' ' << position.z
              << " (" << aimPosition.x << ' ' << aimPosition.y << ' ' << aimPosition.z << ")\n";
     } else {
@@ -97,7 +138,7 @@ void Placer::SavePosition(CVector3f position, CVector3f aimPosition) {
         position.x, position.y, position.z, m_randomPositions.size());
 }
 
-std::optional<RandomPosition> Placer::RandomizePosition(std::vector<RandomPosition> positions) {
+std::optional<PlacerLocation> Placer::RandomizePosition(std::vector<PlacerLocation> positions) {
     auto nextPosition = ChooseRandomItem(positions);
     if (!nextPosition) {
         gz::Log("Placer: no saved positions to randomize");

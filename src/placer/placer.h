@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "data_types.h"
-#include "random_position.h"
+#include "placer_location.h"
 
 class Placer {
 
@@ -20,7 +20,7 @@ class Placer {
     const T* ChooseRandomItem(const std::vector<T>& v);
 
   public:
-    static std::vector<RandomPosition> m_randomPositions;
+    static std::vector<PlacerLocation> m_randomPositions;
 
     static Placer* instance() {
         static Placer instance;
@@ -33,7 +33,7 @@ class Placer {
     void ReloadSavedPositions();
 
     // Teleports the player to a random saved position and returns it; std::nullopt if none are saved
-    std::optional<RandomPosition> RandomizePosition(std::vector<RandomPosition> positions = Placer::m_randomPositions);
+    std::optional<PlacerLocation> RandomizePosition(std::vector<PlacerLocation> positions = Placer::m_randomPositions);
 
     // Sets a random time of day, day (06:00-18:00) is 1.5x more likely than night; returns false without world time
     bool RandomizeTime();
@@ -43,5 +43,5 @@ class Placer {
     bool RandomizeWeather();
 
     // Randomizes time, weather and position; returns the chosen position (the teleport may finish frames later)
-    std::optional<RandomPosition> Place(std::vector<RandomPosition> positions = Placer::m_randomPositions);
+    std::optional<PlacerLocation> Place(std::vector<PlacerLocation> positions = Placer::m_randomPositions);
 };

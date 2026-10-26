@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "data_types.h"
-#include "placer/random_position.h"
+#include "placer/placer_location.h"
 
 class GuesserGameMode
 {
@@ -10,10 +10,10 @@ class GuesserGameMode
     GuesserGameMode() = default;
     ~GuesserGameMode() = default;
 
-    RandomPosition m_targetPosition{};
+    PlacerLocation m_targetPosition{};
     double m_score = 0;
     long m_round = 0;
-    std::vector<RandomPosition> m_positionBuffer;
+    std::vector<PlacerLocation> m_positionBuffer;
 
   public:
     static GuesserGameMode* instance() {

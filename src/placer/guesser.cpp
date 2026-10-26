@@ -38,10 +38,10 @@ void GuesserGameMode::AdvanceToNextRound() {
     if (m_positionBuffer.size() > MAX_POSITION_BUFFER) {
         m_positionBuffer.erase(m_positionBuffer.begin());
     }
-    std::vector<RandomPosition> candidates{};
+    std::vector<PlacerLocation> candidates{};
     std::copy_if(Placer::m_randomPositions.begin(), Placer::m_randomPositions.end(),
-                 std::back_inserter(candidates), [this](const RandomPosition& pos) {
-                     return std::all_of(m_positionBuffer.begin(), m_positionBuffer.end(), [&pos](const RandomPosition& bufferedPos) {
+                 std::back_inserter(candidates), [this](const PlacerLocation& pos) {
+                     return std::all_of(m_positionBuffer.begin(), m_positionBuffer.end(), [&pos](const PlacerLocation& bufferedPos) {
                          return calculateDistance(pos.position, bufferedPos.position) > MIN_DISTANCE_CANDIDATE;
                      });
                  });
