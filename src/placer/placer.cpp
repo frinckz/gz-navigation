@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -217,7 +218,7 @@ void Placer::SavePosition(CVector3f position, CVector3f aimPosition) {
 }
 
 std::optional<PlacerLocation> Placer::RandomizePosition(std::vector<PlacerLocation> positions) {
-    auto nextPosition = ChooseRandomItem(positions);
+    auto nextPosition = ChooseWeightedLocation(positions);
     if (!nextPosition) {
         gz::Log("Placer: no saved positions to randomize");
         return std::nullopt;
@@ -318,12 +319,36 @@ bool Placer::RandomizeWeather() {
     return true;
 }
 
-template <typename T>
-const T* Placer::ChooseRandomItem(const std::vector<T>& v)
-{
-    if (v.empty()) {
+// Locations close to the previous one are unlikely so consecutive rounds don't stay in the same area. The weight grows
+// logarithmically from WEIGHT_MIN at distance 0 to WEIGHT_MAX at WEIGHT_MAX_DISTANCE and stays there.
+static constexpr float WEIGHT_MIN          = 0.01f;
+static constexpr float WEIGHT_MAX          = 1.0f;
+static constexpr float WEIGHT_MAX_DISTANCE = 2000.0f; // meters
+static constexpr float WEIGHT_LOG_SCALE    = 50.0f;   // meters, smaller values make the weight rise faster
+
+// horizontal distance; the height is irrelevant for how far apart two locations feel
+static float HorizontalDistance(const CVector3f& a, const CVector3f& b) {
+    return std::hypot(a.x - b.x, a.z - b.z);
+}
+
+static float LocationWeight(float distance) {
+    const float t = std::log1p(std::min(distance, WEIGHT_MAX_DISTANCE) / WEIGHT_LOG_SCALE)
+                  / std::log1p(WEIGHT_MAX_DISTANCE / WEIGHT_LOG_SCALE);
+    return WEIGHT_MIN + (WEIGHT_MAX - WEIGHT_MIN) * t;
+}
+
+// Picks a location weighted by the distance to the last visited one (uniform if nothing was visited yet)
+const PlacerLocation* Placer::ChooseWeightedLocation(const std::vector<PlacerLocation>& locations) {
+    if (locations.empty()) {
         return nullptr;
     }
-    std::uniform_int_distribution<size_t> dist(0, v.size() - 1);
-    return &v[dist(Rng())];
+    std::vector<float> weights(locations.size(), 1.0f);
+    if (!m_visitedPositions.empty()) {
+        const CVector3f& last = m_visitedPositions.back().position;
+        std::transform(locations.begin(), locations.end(), weights.begin(), [&last](const PlacerLocation& location) {
+            return LocationWeight(HorizontalDistance(location.position, last));
+        });
+    }
+    std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
+    return &locations[dist(Rng())];
 }

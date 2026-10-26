@@ -19,8 +19,8 @@ class Placer {
     static void AppendVisitedLocation(const PlacerLocation& location);
 
 
-    template <typename T>
-    const T* ChooseRandomItem(const std::vector<T>& v);
+    // Picks a location, the farther from the last visited one the more likely (see LocationWeight in placer.cpp)
+    static const PlacerLocation* ChooseWeightedLocation(const std::vector<PlacerLocation>& locations);
 
   public:
     static std::vector<PlacerLocation> m_randomPositions;
