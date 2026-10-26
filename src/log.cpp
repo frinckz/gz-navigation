@@ -24,7 +24,7 @@ private:
         GetModuleFileNameA(nullptr, modulePath, MAX_PATH);
 
         fs::path exePath(modulePath);
-        fs::path logDir = exePath.parent_path() / "logs";
+        fs::path logDir = exePath.parent_path() / "gz_nav" / "logs";
 
         fs::create_directories(logDir);
         return logDir.string();
