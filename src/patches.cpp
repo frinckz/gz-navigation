@@ -45,48 +45,24 @@ static decltype(WndProc) *                pfn_WndProc     = nullptr;
 
 LRESULT WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    const auto &ui = UI::Get();
-
     bool isInGame = GameState::IsInGame();
 
     if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
         return true;
 
-    if (ui->IsVisible()) {
-        ImGuiIO& io = ImGui::GetIO();
-
-        // block mouse messages
-        if (io.WantCaptureMouse) {
-            switch (msg) {
-                case WM_MOUSEWHEEL: // allow this for changing camera distance in third person RC
-                    break;
-                case WM_INPUT:
-                case WM_LBUTTONDOWN:
-                case WM_LBUTTONUP:
-                case WM_LBUTTONDBLCLK:
-                case WM_RBUTTONDOWN:
-                case WM_RBUTTONUP:
-                case WM_RBUTTONDBLCLK:
-                case WM_MBUTTONDOWN:
-                case WM_MBUTTONUP:
-                case WM_MBUTTONDBLCLK:
-                case WM_MOUSEHWHEEL:
-                case WM_MOUSEMOVE:
-                    return true;
-            }
-        }
-
-        // block keyboard messages
-        if (io.WantCaptureKeyboard) {
-            switch (msg) {
-                case WM_KEYDOWN:
-                    break;
-                case WM_KEYUP:
-                case WM_CHAR:
-                case WM_SYSKEYDOWN:
-                case WM_SYSKEYUP:
-                    return true;
-            }
+    // clicks on the guesser buttons must not reach the map below them
+    if (CMap::IsOpen() && ImGui::GetIO().WantCaptureMouse) {
+        switch (msg) {
+            case WM_LBUTTONDOWN:
+            case WM_LBUTTONUP:
+            case WM_LBUTTONDBLCLK:
+            case WM_RBUTTONDOWN:
+            case WM_RBUTTONUP:
+            case WM_RBUTTONDBLCLK:
+            case WM_MBUTTONDOWN:
+            case WM_MBUTTONUP:
+            case WM_MBUTTONDBLCLK:
+                return true;
         }
     }
 

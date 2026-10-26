@@ -1,7 +1,8 @@
 #pragma once
 
 #include "addresses.h"
-#include "imgui/ui.h"
+#include "hook_helpers.h"
+#include <cstddef>
 #include <cstdint>
 
 namespace gz::NInput
@@ -54,13 +55,11 @@ namespace gz::NInput
 
     inline void HookedGotFocus(void* impl)
     {
-        if (UI::Get()->IsVisible()) return; // suppress game-side regain while mod UI is open
         g_origGotFocus(impl);
     }
 
     inline void HookedLostFocus(void* impl)
     {
-        if (UI::Get()->IsVisible()) return; // suppress game-side loss while mod UI is open
         g_origLostFocus(impl);
     }
 
@@ -79,10 +78,6 @@ namespace gz::NInput
 
     inline void HookedUpdateGamepad(CGamepad* thisptr, uint32_t timestamp, bool force)
     {
-        if (UI::Get()->IsVisible()) {
-            memset(thisptr->m_Impl->stateBuffer, 0, sizeof(CGamepadImpl::stateBuffer));
-            return;
-        }
         g_updateGamepad(thisptr, timestamp, force);
     }
 

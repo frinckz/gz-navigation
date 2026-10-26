@@ -6,6 +6,9 @@
 #include "game/custom/tp_state.h"
 #include "game/game_state.h"
 #include "game/input_manager.h"
+#include "game/map.h"
+#include "placer/guesser.h"
+#include "placer/gz_nav.h"
 
 namespace gz
 {
@@ -25,7 +28,6 @@ void UI::Initialize()
     io.IniFilename = nullptr; // no ini persistence
 
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.MouseDrawCursor = false;
 
@@ -104,40 +106,11 @@ void UI::SetupUiLook()
     style.MouseCursorScale = dpiScale;
 }
 
-void UI::SetVisible(bool visible)
-{
-    m_visible = visible;
-
-    auto& io = ImGui::GetIO();
-    if (visible)
-        io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange; // let ImGui change cursor shapes
-    else
-        io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;  // hands cursor back to game
-
-    if (auto* inputMgr = NInput::CManager::instance())
-    {
-        if (visible) inputMgr->LoseFocus();
-        else inputMgr->GainFocus();
-    }
-}
-
 void UI::Render()
 {
     if (!m_initialized) {
         return;
     }
-
-    // --- CONTROLLER TOGGLE LOGIC ---
-    // check for L3 + R3 (Left Stick Click + Right Stick Click)
-    static bool s_wasComboPressed = false;
-    const bool isComboPressed = ImGui::IsKeyDown(ImGuiKey_GamepadL3) && ImGui::IsKeyDown(ImGuiKey_GamepadR3);
-
-    // only trigger once per press to prevent flickering open / closed
-    if (isComboPressed && !s_wasComboPressed) {
-        SetVisible(!m_visible);
-    }
-    s_wasComboPressed = isComboPressed;
-    // -------------------------------
 
     // --- THIRD PERSON CONTROLLER LOGIC ---
     static float s_lastR3PressTime = -999.f;
@@ -151,17 +124,98 @@ void UI::Render()
     }
     // -------------------------------------
 
-    if (!m_visible) {
+    // log the raw map state on every change so the open/close detection can be verified in-game
+    static uint32_t s_lastMapState = UINT32_MAX;
+    if (const auto* map = CMap::instance(); map && map->GetMapState() != s_lastMapState) {
+        s_lastMapState = map->GetMapState();
+        Log("UI: map state changed to %u", s_lastMapState);
+    }
+
+    if (!GameState::IsInGame() || !CMap::IsOpen()) {
         return;
     }
 
-    if (!GameState::IsInGame()) {
-        SetVisible(false);
-        return;
+    if (g_gzNavSettings.mode == GzNavGameMode::Guesser) {
+        RenderGuesserInfo();
+        RenderGuesserControls();
+        if (GuesserGameMode::instance()->HasGuessed()) {
+            RenderGuessResult();
+        }
     }
+}
 
-    ImGui::Begin("Generation Zero Console Thingy");
+// borderless layer without background, only the widgets are visible
+static constexpr ImGuiWindowFlags OVERLAY_FLAGS = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground
+    | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing
+    | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoMove;
 
+// round and score, top left corner of the map
+void UI::RenderGuesserInfo()
+{
+    const ImGuiStyle& style = ImGui::GetStyle();
+    ImGui::SetNextWindowPos(ImVec2(style.WindowPadding.x, style.WindowPadding.y));
+
+    if (ImGui::Begin("##guesser_info", nullptr, OVERLAY_FLAGS | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav)) {
+        const auto* guesser = GuesserGameMode::instance();
+        ImGui::Text("Round #%ld", guesser->GetRound() + 1);
+        ImGui::Text("Score %.0f points", guesser->GetScore());
+    }
+    ImGui::End();
+}
+
+// bottom left corner of the map: go back to the target and guess, after a guess only the next round button
+// gamepad: X resets to the target, Y guesses / starts the next round
+void UI::RenderGuesserControls()
+{
+    auto* guesser = GuesserGameMode::instance();
+    const ImGuiIO& io = ImGui::GetIO();
+    const ImGuiStyle& style = ImGui::GetStyle();
+    ImGui::SetNextWindowPos(ImVec2(style.WindowPadding.x, io.DisplaySize.y - style.WindowPadding.y),
+                            ImGuiCond_Always, ImVec2(0.0f, 1.0f));
+
+    if (ImGui::Begin("##guesser_controls", nullptr, OVERLAY_FLAGS)) {
+        const bool usingGamepad = NInput::g_isUsingGamepad;
+
+        if (guesser->HasGuessed()) {
+            if (ImGui::Button(usingGamepad ? "Next round [Y]" : "Next round")
+                || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceUp, false)) {
+                guesser->AdvanceToNextRound();
+            }
+        } else {
+            if (ImGui::Button(usingGamepad ? "Back to target [X]" : "Back to target")
+                || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceLeft, false)) {
+                guesser->ResetToTarget();
+            }
+            ImGui::SameLine();
+            ImGui::BeginDisabled(!guesser->CanGuess());
+            if (ImGui::Button(usingGamepad ? "Guess [Y]" : "Guess")
+                || (guesser->CanGuess() && ImGui::IsKeyPressed(ImGuiKey_GamepadFaceUp, false))) {
+                guesser->Guess();
+            }
+            ImGui::EndDisabled();
+            if (!guesser->CanGuess() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+                ImGui::SetTooltip("Place a map marker to guess");
+            }
+        }
+    }
+    ImGui::End();
+}
+
+// score of the guessed round, centered
+void UI::RenderGuessResult()
+{
+    const auto* guesser = GuesserGameMode::instance();
+    const ImGuiIO& io = ImGui::GetIO();
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always,
+                            ImVec2(0.5f, 0.5f));
+
+    constexpr ImGuiWindowFlags flags = (OVERLAY_FLAGS & ~ImGuiWindowFlags_NoBackground)
+        | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav;
+    if (ImGui::Begin("##guess_result", nullptr, flags)) {
+        ImGui::Text("Round #%ld", guesser->GetRound() + 1);
+        ImGui::Text("%.0f m away", guesser->GetRoundDistance());
+        ImGui::Text("+%.0f points", guesser->GetRoundScore());
+    }
     ImGui::End();
 }
 

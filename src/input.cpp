@@ -16,9 +16,6 @@
 #include "placer/placer.h"
 #include "placer/gz_nav.h"
 
-static constexpr float FONT_SIZE_INPUT = 0.0155f;
-
-static constexpr int KEY_TOGGLE_UI     = VK_F1;
 static constexpr int KEY_TELEPORT_AIM  = VK_F2;
 static constexpr int KEY_HIDE_HUD      = VK_F3;
 static constexpr int KEY_THIRD_PERSON  = VK_F4;
@@ -33,30 +30,6 @@ void Input::Draw(ID3D11DeviceContext* context)
         // don't draw anything if we are not in-game
         return;
     }
-
-    const auto ui = gz::UI::Get();
-
-    if (!ui->IsVisible()) {
-        // draw input hint
-        const char* hint = gz::NInput::g_isUsingGamepad ? "LS + RS" : "F1";
-
-        Graphics::Get()->DrawString(
-            context, hint, 0.0078f, 0.965f, FONT_SIZE_INPUT, 0x5EC9C9C9
-        );
-    }
-
-    if (!ui->IsVisible() && g_gzNavSettings.mode == GzNavGameMode::Guesser) {
-        auto guesser = GuesserGameMode::instance();
-        auto round = guesser->GetRound();
-        auto score = guesser->GetScore();
-
-        std::stringstream infoStream = std::stringstream("");
-        infoStream << "Round #" << round + 1 << ", Score " << score << " points";
-
-        Graphics::Get()->DrawString(
-            context, infoStream.str(), 0.0078f, 0.0078f, FONT_SIZE_INPUT, 0x5EF9F9F9
-        );
-    }
 }
 
 bool Input::FeedEvent(uint32_t message, WPARAM wParam, LPARAM lParam)
@@ -65,31 +38,9 @@ bool Input::FeedEvent(uint32_t message, WPARAM wParam, LPARAM lParam)
     if (message == WM_KEYDOWN || message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN)
         gz::NInput::g_isUsingGamepad = false;
 
-    gz::UI* ui = gz::UI::Get();
-
-    // if UI is visible, block ALL game input except UI toggle
-    if (ui->IsVisible()) {
-        if (message == WM_KEYDOWN && (lParam >> 30) == 0)
-        {
-            // toggle UI off
-            if (wParam == KEY_TOGGLE_UI) {
-                ui->ToggleVisible();
-                return true;
-            }
-        }
-        // block everything else from reaching the game
-        return true;
-    }
-
-    // ui is not visible, handle global hotkeys
+    // global hotkeys
     if (message == WM_KEYDOWN && (lParam >> 30) == 0)
     {
-        // toggling UI
-        if (wParam == KEY_TOGGLE_UI) {
-            ui->ToggleVisible();
-            return true;
-        }
-
         // shortcut to teleport to aim position
         if (wParam == KEY_TELEPORT_AIM) {
             if (auto* gameWorld = gz::CGameWorld::instance())
@@ -124,14 +75,15 @@ bool Input::FeedEvent(uint32_t message, WPARAM wParam, LPARAM lParam)
             }
         }
 
-        // shortcut to teleport to a random saved position
+        // shortcut to guess / start the next round
         if (wParam == KEY_PLACE_POSITION)
         {
-            // the user's custom map marker is the guess; without one the round is only advanced
-            CVector3f marker{};
-            if (gz::CMap::GetLocalUserWaypoint(marker)) {
-                GuesserGameMode::instance()->Guess(marker);
-                GuesserGameMode::instance()->AdvanceToNextRound();
+            // same as the map buttons: the user's map marker is the guess, a guessed round advances to the next one
+            auto* guesser = GuesserGameMode::instance();
+            if (guesser->HasGuessed()) {
+                guesser->AdvanceToNextRound();
+            } else {
+                guesser->Guess();
             }
             return true;
         }

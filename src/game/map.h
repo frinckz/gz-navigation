@@ -3,6 +3,8 @@
 #include <cstddef>
 
 #include "addresses.h"
+#include "data_types.h"
+#include "hook_helpers.h"
 #include "network_manager.h"
 #include "ui_base.h"
 
@@ -148,6 +150,22 @@ namespace gz
             return map->GetUserWaypoint(networkManager->GetLocalPeerID(), out);
         }
 
+
+        // Map scene state (low dword of field_70). Observed in-game: 0 = closed, 1 = scene initialised after the game loaded,
+        // 2 -> 3 within ~20 ms when the map is opened (3 = open), back to 0 when it is closed.
+        static constexpr uint32_t MAP_STATE_OPEN = 3;
+
+        [[nodiscard]] uint32_t GetMapState() const
+        {
+            return static_cast<uint32_t>(field_70 & 0xFFFFFFFFu);
+        }
+
+        // true while the map screen is open
+        [[nodiscard]] static bool IsOpen()
+        {
+            const auto* map = instance();
+            return map && map->GetMapState() == MAP_STATE_OPEN;
+        }
 
         static CVector2f WorldToMapPosition(float worldX, float worldZ)
         {

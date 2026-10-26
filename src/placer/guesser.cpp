@@ -1,4 +1,6 @@
 #include "guesser.h"
+#include "game/game_world.h"
+#include "game/map.h"
 #include "placer/placer.h"
 
 #include <algorithm>
@@ -19,14 +21,35 @@ double calculateDistance(CVector3f const& a, CVector3f const& b) {
     return sqrt(dx * dx + dz * dz);
 }
 
-void GuesserGameMode::Guess(CVector3f position) {
-    auto distance = calculateDistance(m_targetPosition.position, position);
+bool GuesserGameMode::CanGuess() const {
+    CVector3f marker{};
+    return !m_guessed && gz::CMap::GetLocalUserWaypoint(marker);
+}
+
+bool GuesserGameMode::Guess() {
+    CVector3f marker{};
+    if (m_guessed || !gz::CMap::GetLocalUserWaypoint(marker)) {
+        return false;
+    }
+    m_roundDistance = calculateDistance(m_targetPosition.position, marker);
     // full points within PERFECT_DISTANCE, then exponential decay: ~37 at 500 m, ~5 at 1.5 km
-    double score = distance <= PERFECT_DISTANCE
+    m_roundScore = m_roundDistance <= PERFECT_DISTANCE
         ? MAX_SCORE
-        : MAX_SCORE * std::exp(-(distance - PERFECT_DISTANCE) / SCORE_DECAY_DISTANCE);
-    m_score += score;
-    // TODO: Show score on map
+        : MAX_SCORE * std::exp(-(m_roundDistance - PERFECT_DISTANCE) / SCORE_DECAY_DISTANCE);
+    m_score += m_roundScore;
+    m_guessed = true;
+    return true;
+}
+
+void GuesserGameMode::ResetToTarget() {
+    auto* gameWorld = gz::CGameWorld::instance();
+    if (!gameWorld) {
+        return;
+    }
+    const CVector3f& aim = m_targetPosition.aimPosition;
+    // targets without a usable aim position (0 0 0) only change the position
+    const bool hasAim = aim.x != 0.0f || aim.y != 0.0f || aim.z != 0.0f;
+    gameWorld->SafeTeleportToPosition(m_targetPosition.position, nullptr, hasAim ? &aim : nullptr);
 }
 
 // Available locations that were not visited yet; once everything was visited all locations are allowed again
@@ -39,6 +62,7 @@ static std::vector<PlacerLocation> UnvisitedCandidates() {
 
 void GuesserGameMode::AdvanceToNextRound() {
     m_round++;
+    m_guessed = false;
     // the teleport may still be running (fast travel), so the chosen position is the target, not the player position
     if (auto placed = Placer::instance()->Place(UnvisitedCandidates())) {
         m_targetPosition = *placed;
@@ -57,4 +81,16 @@ void GuesserGameMode::Start() {
     if (auto placed = Placer::instance()->Place(UnvisitedCandidates())) {
         m_targetPosition = *placed;
     }
+}
+
+bool GuesserGameMode::HasGuessed() const {
+    return m_guessed;
+}
+
+double GuesserGameMode::GetRoundScore() const {
+    return m_roundScore;
+}
+
+double GuesserGameMode::GetRoundDistance() const {
+    return m_roundDistance;
 }

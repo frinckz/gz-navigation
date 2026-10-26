@@ -6,7 +6,7 @@
 #include "animal.h"
 #include "hook_helpers.h"
 #include "network_manager.h"
-#include "imgui/ui.h"
+#include "player_network_manager.h"
 
 #pragma pack(push, 1)
 namespace gz

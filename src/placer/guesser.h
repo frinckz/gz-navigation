@@ -14,15 +14,28 @@ class GuesserGameMode
     double m_score = 0;
     long m_round = 0;
 
+    bool m_guessed = false;         // the current round was guessed, waiting for the next round
+    double m_roundScore = 0;        // points of the guessed round
+    double m_roundDistance = 0;     // meters between the guess and the target of the guessed round
+
   public:
     static GuesserGameMode* instance() {
         static GuesserGameMode instance;
         return &instance;
     }
 
-    void Guess(CVector3f position);
+    // Scores the user's map marker against the target; false if the round is already guessed or no marker is placed
+    bool Guess();
+    // Teleports the player back to the target of the current round
+    void ResetToTarget();
     void AdvanceToNextRound();
+    void Start();
+
+    // A guess needs the user's map marker and a round that was not guessed yet
+    [[nodiscard]] bool CanGuess() const;
+    [[nodiscard]] bool HasGuessed() const;
     [[nodiscard]] double GetScore() const;
     [[nodiscard]] long GetRound() const;
-    void Start();
+    [[nodiscard]] double GetRoundScore() const;
+    [[nodiscard]] double GetRoundDistance() const;
 };
