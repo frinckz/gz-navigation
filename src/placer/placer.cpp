@@ -6,12 +6,17 @@
 #include "game/weather.h"
 
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
 
 std::vector<PlacerLocation> Placer::m_randomPositions = {};
+
+// the visited file keeps at most this many times the number of available locations
+static constexpr size_t VISITED_LIMIT_FACTOR = 2;
+static constexpr size_t VISITED_RECORD_LINES = 4;
 
 // day and night are both 12 hours long, so day is DAY_WEIGHT times as likely per hour as night
 static constexpr float DAY_START  = 6.0f;
@@ -79,6 +84,59 @@ static bool ParseMetaHeader(const std::string& line, PlacerLocationMetadata& met
     meta.region = Trim(inner.substr(first + 1, second - first - 1));
     meta.type = Trim(inner.substr(second + 1));
     return true;
+}
+
+std::string Placer::GetVisitedFilePath() {
+    return (std::filesystem::path(GetPositionsFilePath()).parent_path() / "visited_locations.txt").string();
+}
+
+// Local time as ISO 8601, e.g. 2026-10-26T14:03:11
+static std::string IsoTimestamp() {
+    const auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::tm localTime;
+    localtime_s(&localTime, &time);
+    std::ostringstream oss;
+    oss << std::put_time(&localTime, "%Y-%m-%dT%H:%M:%S");
+    return oss.str();
+}
+
+// Appends a fixed size record of 4 lines: "# (name, region, type)", "# <ISO date>", the position and a blank spacer.
+// The file is trimmed to the newest VISITED_LIMIT_FACTOR * available locations records by line count.
+void Placer::AppendVisitedLocation(const PlacerLocation& location) {
+    std::vector<std::string> lines;
+    {
+        std::ifstream in(GetVisitedFilePath());
+        std::string line;
+        while (std::getline(in, line)) {
+            if (!line.empty() && line.back() == '\r') {
+                line.pop_back();
+            }
+            lines.push_back(std::move(line));
+        }
+    }
+
+    const auto& meta = location.locationMetadata;
+    std::ostringstream position;
+    position << std::setprecision(9) << location.position.x << ' ' << location.position.y << ' ' << location.position.z
+             << " (" << location.aimPosition.x << ' ' << location.aimPosition.y << ' ' << location.aimPosition.z << ")";
+    lines.push_back("# (" + meta.name + ", " + meta.region + ", " + meta.type + ")");
+    lines.push_back("# " + IsoTimestamp());
+    lines.push_back(position.str());
+    lines.push_back("");
+
+    const size_t maxLines = std::max<size_t>(1, VISITED_LIMIT_FACTOR * m_randomPositions.size()) * VISITED_RECORD_LINES;
+    if (lines.size() > maxLines) {
+        lines.erase(lines.begin(), lines.end() - maxLines);
+    }
+
+    std::ofstream out(GetVisitedFilePath(), std::ios::trunc);
+    if (!out) {
+        gz::Log("Placer: failed to write visited location %s", GetVisitedFilePath().c_str());
+        return;
+    }
+    for (const auto& line : lines) {
+        out << line << '\n';
+    }
 }
 
 Placer::Placer() {
@@ -152,6 +210,7 @@ std::optional<PlacerLocation> Placer::RandomizePosition(std::vector<PlacerLocati
     // entries without a usable aim position (0 0 0) only change the position
     bool hasAim = aim.x != 0.0f || aim.y != 0.0f || aim.z != 0.0f;
     gameWorld->SafeTeleportToPosition(nextPosition->position, nullptr, hasAim ? &aim : nullptr);
+    AppendVisitedLocation(*nextPosition);
     return *nextPosition;
 }
 

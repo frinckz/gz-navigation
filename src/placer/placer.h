@@ -14,6 +14,9 @@ class Placer {
     Placer();
     ~Placer() = default;
     static std::string GetPositionsFilePath();
+    static std::string GetVisitedFilePath();
+    // Records a location the player was placed at in visited_locations.txt
+    static void AppendVisitedLocation(const PlacerLocation& location);
 
 
     template <typename T>
