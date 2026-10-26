@@ -1,5 +1,4 @@
 #include "../ui.h"
-#include "../fonts/IconsMaterialDesign.h"
 
 #include <imgui.h>
 
@@ -12,7 +11,7 @@ void RenderSettingsTab()
     ConsoleSettings& settings = ui->GetSettings();
 
 // -- HOTKEYS --
-    if (ImGui::CollapsingHeader(ICON_MD_KEYBOARD " Hotkeys", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader(" Hotkeys", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::TextWrapped("Click a button and press a key to rebind");
         ImGui::Spacing();
 
@@ -191,7 +190,7 @@ void RenderSettingsTab()
     ImGui::Spacing();
 
     // -- GAME SETTINGS --
-    if (ImGui::CollapsingHeader(ICON_MD_SETTINGS " Game Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader(" Game Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Checkbox("Quicker Startup", &settings.quickerStartup)) {
             ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
         } ImGui::SameLine(); UI::HelpMarker("The game will start loading into the main menu while the splash screens are still active, saving you a few seconds.");
@@ -201,7 +200,7 @@ void RenderSettingsTab()
     ImGui::Spacing();
 
     // -- MOD SETTINGS --
-    if (ImGui::CollapsingHeader(ICON_MD_SETTINGS " Mod Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader(" Mod Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::SliderFloat("UI Font Scale", &settings.fontSize, 0.5f, 3.0f, "%.1f");
         if (ImGui::IsItemDeactivatedAfterEdit()) {
             ConsoleSettings::ApplyFontSize();

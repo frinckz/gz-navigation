@@ -1,5 +1,4 @@
 #include "../ui.h"
-#include "../fonts/IconsMaterialDesign.h"
 
 #include <imgui.h>
 
@@ -24,7 +23,7 @@ namespace gz::UITabs
         const CCharacter* character = player->GetCharacter();
 
         // -- SPAWNING --
-        if (ImGui::CollapsingHeader(ICON_MD_ADD_CIRCLE " Spawning", ImGuiTreeNodeFlags_DefaultOpen)
+        if (ImGui::CollapsingHeader(" Spawning", ImGuiTreeNodeFlags_DefaultOpen)
             && reserveWorld && reserveWorld->GetPopulationManager() && reserveWorld->GetSpawnSystem())
         {
             if (manager->GetNetworkPlayer() == nullptr || !manager->GetNetworkPlayer()->IsHost())
@@ -113,7 +112,7 @@ namespace gz::UITabs
         ImGui::Spacing();
 
         // -- HACKING --
-        if (ImGui::CollapsingHeader(ICON_MD_COMPUTER " Hacking", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader(" Hacking", ImGuiTreeNodeFlags_DefaultOpen))
         {
             if (ImGui::Checkbox("Hacking Always Succeeds", &settings.hackingAlwaysSucceeds))
             {
@@ -149,7 +148,7 @@ namespace gz::UITabs
 
         CAnimalSpottingManager* spottingManager = reserveWorld ? reserveWorld->GetSpottingManager() : nullptr;
         CRemoteController* rc = character ? character->GetRemoteController() : nullptr;
-        if (ImGui::CollapsingHeader(ICON_MD_SMART_TOY " Targeted Machine", ImGuiTreeNodeFlags_DefaultOpen) && spottingManager)
+        if (ImGui::CollapsingHeader(" Targeted Machine", ImGuiTreeNodeFlags_DefaultOpen) && spottingManager)
         {
             if (spottingManager->GetTargetAnimal())
             {
@@ -318,7 +317,7 @@ namespace gz::UITabs
         ImGui::Spacing();
 
         // -- CONTROLLED MACHINE --
-        if (rc && ImGui::CollapsingHeader(ICON_MD_SETTINGS_REMOTE " Controlled Machine", ImGuiTreeNodeFlags_DefaultOpen))
+        if (rc && ImGui::CollapsingHeader(" Controlled Machine", ImGuiTreeNodeFlags_DefaultOpen))
         {
             // -- signal strength cheat
             if (ImGui::Checkbox("Unlimited Signal Strength", &settings.unlimitedRcSignalStrength))

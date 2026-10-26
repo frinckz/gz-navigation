@@ -61,7 +61,6 @@ namespace gz
 
         bool m_visible = false;
         bool m_initialized = false;
-        ImFont* mainfont = nullptr;
 
         ConsoleSettings m_settings;
 

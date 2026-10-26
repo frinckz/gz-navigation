@@ -1,7 +1,6 @@
 #include <imgui.h>
 
 #include "../ui.h"
-#include "../fonts/IconsMaterialDesign.h"
 #include "game/player_network_manager.h"
 #include "patches/resource_patch.h"
 #include "game/map.h"
@@ -35,7 +34,7 @@ namespace gz::UITabs
         CVehicleManager* vehicleManager = CVehicleManager::instance();
 
         // -- HEALTH --
-        if (ImGui::CollapsingHeader(ICON_MD_FAVORITE " Health", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader(" Health", ImGuiTreeNodeFlags_DefaultOpen))
         {
             if (character)
             {
@@ -111,7 +110,7 @@ namespace gz::UITabs
 
         // -- STAMINA --
         auto* networkComp = playerMgr->GetPlayerNetworkComponent();
-        if (ImGui::CollapsingHeader(ICON_MD_FLASH_ON " Stamina", ImGuiTreeNodeFlags_DefaultOpen) && networkComp)
+        if (ImGui::CollapsingHeader(" Stamina", ImGuiTreeNodeFlags_DefaultOpen) && networkComp)
         {
             bool infiniteStamina = networkComp->GetInfiniteStamina();
             if (ImGui::Checkbox("Infinite Stamina", &infiniteStamina))
@@ -127,7 +126,7 @@ namespace gz::UITabs
         ImGui::Spacing();
 
         // -- INVENTORY --
-        if (ImGui::CollapsingHeader(ICON_MD_LIST " Inventory", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader(" Inventory", ImGuiTreeNodeFlags_DefaultOpen))
         {
             bool unlimitedStorageSize = PlayerEqUtils::IsUnlimitedStorageSize();
             bool ignoreEncumbrance = PlayerEqUtils::IsIgnoringEncumbrance();
@@ -210,7 +209,7 @@ namespace gz::UITabs
         ImGui::Spacing();
 
         // -- HUD --
-        if (ImGui::CollapsingHeader(ICON_MD_DASHBOARD " HUD", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader(" HUD", ImGuiTreeNodeFlags_DefaultOpen))
         {
             bool hideHUD = CUIManager::IsHudHidden();
             if (ImGui::Checkbox("Hide HUD", &hideHUD))
@@ -228,7 +227,7 @@ namespace gz::UITabs
         ImGui::Spacing();
         ImGui::Spacing();
 
-        if (ImGui::CollapsingHeader(ICON_MD_CAMERA " Camera", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader(" Camera", ImGuiTreeNodeFlags_DefaultOpen))
         {
             if (TpState::g_resourcesPrimed && character)
             {
@@ -415,7 +414,7 @@ namespace gz::UITabs
         ImGui::Spacing();
 
         // -- MAP --
-        if (ImGui::CollapsingHeader(ICON_MD_MAP " Map", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader(" Map", ImGuiTreeNodeFlags_DefaultOpen))
         {
             if (ImGui::Checkbox("Enable Fast Travel Anywhere", &settings.enableFastTravelAnywhere))
             {
@@ -458,7 +457,7 @@ namespace gz::UITabs
         ImGui::Spacing();
 
         // -- DAMAGE, FACTIONS & DETECTION --
-        if (ImGui::CollapsingHeader(ICON_MD_FLAG " Machine Interaction", ImGuiTreeNodeFlags_DefaultOpen) && character)
+        if (ImGui::CollapsingHeader(" Machine Interaction", ImGuiTreeNodeFlags_DefaultOpen) && character)
         {
             // -- machine dmg multiplier
             ImGui::SliderFloat("Bullet Damage Multiplier", &DamageMultipliers::g_applyBulletDamageMultiplier, 0.1f, 100.0f, "%.1f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
@@ -510,7 +509,7 @@ namespace gz::UITabs
         SPlayerData* activePlayerData = saveLoader ? saveLoader->GetActivePlayerData() : nullptr;
 
         // -- BASE BUILDING --
-        if (ImGui::CollapsingHeader(ICON_MD_HOUSE " Base Building", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader(" Base Building", ImGuiTreeNodeFlags_DefaultOpen))
         {
             if (ImGui::Checkbox("Unrestricted Building", &settings.enableUnrestrictedBuilding))
             {
@@ -539,7 +538,7 @@ namespace gz::UITabs
         ImGui::Spacing();
 
         // -- VEHICLES --
-        if (ImGui::CollapsingHeader(ICON_MD_PEDAL_BIKE " Vehicles", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader(" Vehicles", ImGuiTreeNodeFlags_DefaultOpen))
         {
             if (VehiclePatches::IsInitialized())
             {
@@ -598,7 +597,7 @@ namespace gz::UITabs
         ImGui::Spacing();
 
         // -- SKILLS & EXPERIENCE --
-        if (ImGui::CollapsingHeader(ICON_MD_ACCOUNT_CIRCLE " Skills & Experience", ImGuiTreeNodeFlags_DefaultOpen) &&
+        if (ImGui::CollapsingHeader(" Skills & Experience", ImGuiTreeNodeFlags_DefaultOpen) &&
             playerInfo && saveLoader && activePlayerData)
         {
             CPlayerProgressionManager* progressionManager = playerInfo->GetProgressionManager();
@@ -664,7 +663,7 @@ namespace gz::UITabs
         ImGui::Spacing();
 
         // -- MISCELLANEOUS --
-        if (ImGui::CollapsingHeader(ICON_MD_TUNE " Miscellaneous", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader(" Miscellaneous", ImGuiTreeNodeFlags_DefaultOpen))
         {
             // -- first-person shadow
             auto player = playerMgr->GetPlayer();
@@ -700,7 +699,7 @@ namespace gz::UITabs
                     character->SetGhostMode(true);
                 }
                 ImGui::SameLine();
-                if (ImGui::Button(ICON_MD_REFRESH "##ghostMode"))
+                if (ImGui::Button("Disable##ghostMode"))
                 {
                     character->SetGhostMode(false);
                 }

@@ -1,7 +1,5 @@
 #include "ui.h"
 #include "log.h"
-#include "fonts/roboto-regular.cpp"
-#include "fonts/materialicons.cpp"
 
 #include "game/player_network_manager.h"
 
@@ -69,30 +67,11 @@ void UI::SetupUiLook()
     ImGui::StyleColorsDark();
 
     ImGuiStyle& style = ImGui::GetStyle();
-    ImGuiIO& io = ImGui::GetIO();
 
     // query DPI from the game window (or fallback to desktop DPI)
     float dpiScale = 1.0f;
     dpiScale = GetDeviceCaps(GetDC(nullptr), LOGPIXELSX) / 96.0f;
-    float fontSize = std::round(16.0f * dpiScale); // e.g. 32px on 4K
-
-    // fonts
-    mainfont = io.Fonts->AddFontFromMemoryCompressedTTF(
-        Roboto_Regular_compressed_data,
-        Roboto_Regular_compressed_size,
-        fontSize
-    );
-
-    ImFontConfig config;
-    config.MergeMode = true;
-    config.PixelSnapH = true;
-
-    io.Fonts->AddFontFromMemoryCompressedTTF(
-        MaterialIcons_compressed_data,
-        MaterialIcons_compressed_size,
-        0.75f * fontSize,
-        &config
-    );
+    style.FontSizeBase = std::round(16.0f * dpiScale); // default font, e.g. 32px on 4K
 
     // colours
     ImVec4* colors = style.Colors;
@@ -257,13 +236,11 @@ void UI::Render()
     }
 
     ImGui::Begin("Generation Zero Console Thingy");
-    ImGui::PushFont(mainfont);
 
     auto* playerMgr = CNetworkPlayerManager::instance();
 
     if (!playerMgr) {
         ImGui::Text("Error: CNetworkPlayerManager instance not found.");
-        ImGui::PopFont();
         ImGui::End();
         return;
     }
@@ -315,7 +292,6 @@ void UI::Render()
         ImGui::EndTabBar();
     }
 
-    ImGui::PopFont();
     ImGui::End();
 }
 

@@ -1,5 +1,4 @@
 #include "../ui.h"
-#include "../fonts/IconsMaterialDesign.h"
 
 #include <imgui.h>
 
@@ -32,7 +31,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
     // --- EVENTS ---
     CSocialManager* socialMgr = CSocialManager::instance();
     EventManager* eventMgr = socialMgr ? socialMgr->GetEventManager() : nullptr;
-    if (ImGui::CollapsingHeader(ICON_MD_EVENT " Events", ImGuiTreeNodeFlags_DefaultOpen) && eventMgr) {
+    if (ImGui::CollapsingHeader(" Events", ImGuiTreeNodeFlags_DefaultOpen) && eventMgr) {
         auto events = eventMgr->GetActiveEvents();
 
         bool schedulerBlocked = EventManager::IsSchedulerBlocked();
@@ -88,7 +87,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
 
     // --- WORLD TIME ---
     auto* worldTime = CWorldTime::instance();
-    if (ImGui::CollapsingHeader(ICON_MD_ACCESS_TIME " World Time", ImGuiTreeNodeFlags_DefaultOpen) && worldTime)
+    if (ImGui::CollapsingHeader(" World Time", ImGuiTreeNodeFlags_DefaultOpen) && worldTime)
     {
         // --- MIRROR REAL TIME ---
         bool mirrorRealTime = settings.mirrorRealTime;
@@ -162,7 +161,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
                           "A time scale of 1.0x represents normal speed, 0.0x freezes time, and negative values reverse time.\n"
                           "CTRL + Click the slider to input a custom value.");
 
-        if (ImGui::Button(ICON_MD_REFRESH " Reset"))
+        if (ImGui::Button(" Reset"))
         {
             worldTime->ResetTimeScale();
         }
@@ -176,7 +175,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
 
     // --- SPAWNING ---
     auto* spawnSys = CSpawnSystem::instance();
-    if (ImGui::CollapsingHeader(ICON_MD_ADD_CIRCLE " Spawning", ImGuiTreeNodeFlags_DefaultOpen) && spawnSys)
+    if (ImGui::CollapsingHeader(" Spawning", ImGuiTreeNodeFlags_DefaultOpen) && spawnSys)
     {
         ImGui::Indent();
         for (const auto & category : Data::spawnCategories)
@@ -275,7 +274,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
     // --- PHYSICS ---
     auto* physicsSystem = CPhysicsSystem::instance();
     auto* world = physicsSystem ? physicsSystem->GetWorld() : nullptr;
-    if (ImGui::CollapsingHeader(ICON_MD_CATEGORY " Physics", ImGuiTreeNodeFlags_DefaultOpen) && world) {
+    if (ImGui::CollapsingHeader(" Physics", ImGuiTreeNodeFlags_DefaultOpen) && world) {
         // -- world gravity
         float gravity = world->GetGravityInGs();
         ImGui::TextWrapped("World Gravity (Physics Objects)");
@@ -344,7 +343,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
     // --- TELEPORTATION ---
     auto* player = playerMgr->GetPlayer();
     auto* gameWorld = CGameWorld::instance();
-    if (ImGui::CollapsingHeader(ICON_MD_PIN_DROP " Teleportation", ImGuiTreeNodeFlags_DefaultOpen) && player && gameWorld) {
+    if (ImGui::CollapsingHeader(" Teleportation", ImGuiTreeNodeFlags_DefaultOpen) && player && gameWorld) {
         CVector3f    playerPos = player->GetPositionVector();
         static float x         = playerPos.x;
         static float y         = playerPos.y;
@@ -399,7 +398,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
         ImGui::Spacing();
 
         ImGui::Indent();
-        if (ImGui::CollapsingHeader(ICON_MD_LOCATION_ON " Predefined Locations"))
+        if (ImGui::CollapsingHeader(" Predefined Locations"))
         {
             // search bar
             ImGui::SetNextItemWidth(-1); // Full width
@@ -481,7 +480,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
     auto* weather = landscapeManager ? landscapeManager->GetWeather() : nullptr;
     auto* envGfxMgr = CEnvironmentGfxManager::instance();
 
-    if (ImGui::CollapsingHeader(ICON_MD_WB_SUNNY " Weather", ImGuiTreeNodeFlags_DefaultOpen) && landscapeManager && weather)
+    if (ImGui::CollapsingHeader(" Weather", ImGuiTreeNodeFlags_DefaultOpen) && landscapeManager && weather)
     {
         {
             auto& wo = Weather::g_overrides;
@@ -557,7 +556,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
                 UI::HelpMarker("The strength of the wind. Keep between 2 & 8 for best results.");
 
                 ImGui::Spacing();
-                if (ImGui::Button(ICON_MD_REFRESH " Reset to Defaults"))
+                if (ImGui::Button(" Reset to Defaults"))
                 {
                     const bool wasEnabled = wo.enabled;
                     wo = Weather::Overrides{};
@@ -630,7 +629,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
     ImGui::Spacing();
 
     // --- GFX ---
-    if (ImGui::CollapsingHeader(ICON_MD_FILTER_VINTAGE " GFX & Filters", ImGuiTreeNodeFlags_DefaultOpen) && envGfxMgr)
+    if (ImGui::CollapsingHeader(" GFX & Filters", ImGuiTreeNodeFlags_DefaultOpen) && envGfxMgr)
     {
         const uint32_t activeFilter = PresetOverride::ActiveFilterHash();
 
@@ -671,7 +670,7 @@ void RenderWorldTab(CNetworkPlayerManager* playerMgr)
 
         ImGui::Spacing();
         ImGui::BeginDisabled(!PresetOverride::IsFilterActive());
-        if (ImGui::Button(ICON_MD_REFRESH " Clear Filter"))
+        if (ImGui::Button(" Clear Filter"))
             PresetOverride::ClearFilter();
         ImGui::EndDisabled();
     }
