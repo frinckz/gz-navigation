@@ -157,11 +157,30 @@ void UI::RenderGuesserInfo()
 
     if (ImGui::Begin("##guesser_info", nullptr, OVERLAY_FLAGS | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav)) {
         const auto* guesser = GuesserGameMode::instance();
-        ImGui::Text("Round #%ld", guesser->GetRound() + 1);
-        ImGui::Text("Score %.0f points", guesser->GetScore());
+        ImGui::Text("ROUND #%ld", guesser->GetRound() + 1);
+        ImGui::Text("SCORE %.0f POINTS", guesser->GetScore());
     }
     ImGui::End();
 }
+
+// sharp cornered buttons, black text on white
+struct ButtonStyle
+{
+    ButtonStyle()
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.85f, 0.85f, 0.85f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.70f, 0.70f, 0.70f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+    }
+    ~ButtonStyle()
+    {
+        ImGui::PopStyleColor(4);
+        ImGui::PopStyleVar(2);
+    }
+};
 
 // bottom left corner of the map: go back to the target and guess, after a guess only the next round button
 // gamepad: X resets to the target, Y guesses / starts the next round
@@ -175,27 +194,35 @@ void UI::RenderGuesserControls()
 
     if (ImGui::Begin("##guesser_controls", nullptr, OVERLAY_FLAGS)) {
         const bool usingGamepad = NInput::g_isUsingGamepad;
+        bool guessHovered = false;
 
-        if (guesser->HasGuessed()) {
-            if (ImGui::Button(usingGamepad ? "Next round [Y]" : "Next round")
-                || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceUp, false)) {
-                guesser->AdvanceToNextRound();
+        {
+            ButtonStyle buttonStyle;
+
+            if (guesser->HasGuessed()) {
+                if (ImGui::Button(usingGamepad ? "NEXT ROUND [Y]" : "NEXT ROUND")
+                    || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceUp, false)) {
+                    guesser->AdvanceToNextRound();
+                }
+            } else {
+                if (ImGui::Button(usingGamepad ? "BACK TO TARGET [X]" : "BACK TO TARGET")
+                    || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceLeft, false)) {
+                    guesser->ResetToTarget();
+                }
+                ImGui::SameLine();
+                ImGui::BeginDisabled(!guesser->CanGuess());
+                if (ImGui::Button(usingGamepad ? "GUESS [Y]" : "GUESS")
+                    || (guesser->CanGuess() && ImGui::IsKeyPressed(ImGuiKey_GamepadFaceUp, false))) {
+                    guesser->Guess();
+                }
+                ImGui::EndDisabled();
+                guessHovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
             }
-        } else {
-            if (ImGui::Button(usingGamepad ? "Back to target [X]" : "Back to target")
-                || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceLeft, false)) {
-                guesser->ResetToTarget();
-            }
-            ImGui::SameLine();
-            ImGui::BeginDisabled(!guesser->CanGuess());
-            if (ImGui::Button(usingGamepad ? "Guess [Y]" : "Guess")
-                || (guesser->CanGuess() && ImGui::IsKeyPressed(ImGuiKey_GamepadFaceUp, false))) {
-                guesser->Guess();
-            }
-            ImGui::EndDisabled();
-            if (!guesser->CanGuess() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-                ImGui::SetTooltip("Place a map marker to guess");
-            }
+        }
+
+        // outside of the button style so the tooltip keeps its default colors
+        if (guessHovered && !guesser->CanGuess()) {
+            ImGui::SetTooltip("PLACE A MAP MARKER TO GUESS");
         }
     }
     ImGui::End();
@@ -212,9 +239,9 @@ void UI::RenderGuessResult()
     constexpr ImGuiWindowFlags flags = (OVERLAY_FLAGS & ~ImGuiWindowFlags_NoBackground)
         | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav;
     if (ImGui::Begin("##guess_result", nullptr, flags)) {
-        ImGui::Text("Round #%ld", guesser->GetRound() + 1);
-        ImGui::Text("%.0f m away", guesser->GetRoundDistance());
-        ImGui::Text("+%.0f points", guesser->GetRoundScore());
+        ImGui::Text("ROUND #%ld", guesser->GetRound() + 1);
+        ImGui::Text("%.0f M AWAY", guesser->GetRoundDistance());
+        ImGui::Text("+%.0f POINTS", guesser->GetRoundScore());
     }
     ImGui::End();
 }
