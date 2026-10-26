@@ -311,12 +311,14 @@ void UI::RenderGuessResult()
 
     constexpr ImGuiWindowFlags flags = (OVERLAY_FLAGS & ~ImGuiWindowFlags_NoBackground)
         | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     if (ImGui::Begin("##guess_result", nullptr, flags)) {
         ImGui::Text("ROUND #%ld", guesser->GetRound() + 1);
         ImGui::Text("%.0f M AWAY", guesser->GetRoundDistance());
         ImGui::Text("+%.0f POINTS", guesser->GetRoundScore());
     }
     ImGui::End();
+    ImGui::PopStyleVar();
 }
 
 } // namespace gz
