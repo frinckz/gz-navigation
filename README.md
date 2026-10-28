@@ -8,12 +8,15 @@ Written in C++ and based on [gz-console-thingy](./gz-console-thingy.md).
 
 ## Modes
 
+**Normal:**
+1. The normal game without in game markers and navigation help 
+
 **Location Guesser:**
 1. Player is transported to one of 200 random, handpicked locations
 2. They have to mark and confirm it on the map
 3. A score is calculated based on the distance from the actual position
 
-**Extraction:**
+**Extraction (Under Development):**
 1. Player is transported to a specific location
 2. They have to get to another specific location (based on textual descriptions / images / markers on the map / tv adverts / phone calls / phone voice mails)
 3. A score is calculated based on the time

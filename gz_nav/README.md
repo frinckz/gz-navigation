@@ -22,5 +22,5 @@
 
 1. Select mode setting `mode` in `settings.ini`
    * `mode=0` Normal mode
-   * `mode=1` Guesser mode (Hint: Use map to make a guess)
+   * `mode=1` Guesser mode (Use the map to make a guess)
 2. Start Game
