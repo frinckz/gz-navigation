@@ -42,7 +42,7 @@ bool GuesserGameMode::Guess() {
     return true;
 }
 
-void GuesserGameMode::ResetToTarget() {
+void GuesserGameMode::ResetToTarget() const {
     gz::CMap::Close();
     auto* gameWorld = gz::CGameWorld::instance();
     if (!gameWorld) {
@@ -54,20 +54,12 @@ void GuesserGameMode::ResetToTarget() {
     gameWorld->SafeTeleportToPosition(m_targetPosition.position, nullptr, hasAim ? &aim : nullptr);
 }
 
-// Available locations that were not visited yet; once everything was visited all locations are allowed again
-static std::vector<PlacerLocation> UnvisitedCandidates() {
-    std::vector<PlacerLocation> candidates{};
-    std::copy_if(Placer::m_randomPositions.begin(), Placer::m_randomPositions.end(),
-                 std::back_inserter(candidates), [](const PlacerLocation& pos) { return !Placer::IsVisited(pos); });
-    return candidates.empty() ? Placer::m_randomPositions : candidates;
-}
-
 void GuesserGameMode::AdvanceToNextRound() {
     m_round++;
     m_guessed = false;
     gz::CMap::Close();
     // the teleport may still be running (fast travel), so the chosen position is the target, not the player position
-    if (auto placed = Placer::instance()->Place(UnvisitedCandidates())) {
+    if (auto placed = Placer::instance()->Place()) {
         m_targetPosition = *placed;
     }
 }
@@ -81,7 +73,7 @@ double GuesserGameMode::GetScore() const {
 }
 
 void GuesserGameMode::Start() {
-    if (auto placed = Placer::instance()->Place(UnvisitedCandidates())) {
+    if (auto placed = Placer::instance()->Place()) {
         m_targetPosition = *placed;
     }
 }

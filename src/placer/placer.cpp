@@ -13,9 +13,6 @@
 #include <iomanip>
 #include <sstream>
 
-std::vector<PlacerLocation> Placer::m_randomPositions = {};
-std::vector<PlacerLocation> Placer::m_visitedPositions = {};
-
 // the visited file keeps at most this many times the number of available locations
 static constexpr size_t VISITED_LIMIT_FACTOR = 2;
 static constexpr size_t VISITED_RECORD_LINES = 4;
@@ -126,14 +123,15 @@ void Placer::AppendVisitedLocation(const PlacerLocation& location) {
     lines.push_back(position.str());
     lines.push_back("");
 
-    const size_t maxLines = std::max<size_t>(1, VISITED_LIMIT_FACTOR * m_randomPositions.size()) * VISITED_RECORD_LINES;
+    const size_t maxLines = std::max<size_t>(1, VISITED_LIMIT_FACTOR * m_randomLocations.size()) * VISITED_RECORD_LINES;
     if (lines.size() > maxLines) {
         lines.erase(lines.begin(), lines.end() - maxLines);
     }
 
-    m_visitedPositions.push_back(location);
-    if (m_visitedPositions.size() > maxLines / VISITED_RECORD_LINES) {
-        m_visitedPositions.erase(m_visitedPositions.begin(), m_visitedPositions.end() - maxLines / VISITED_RECORD_LINES);
+    m_visitedLocations.push_back(location);
+    if (m_visitedLocations.size() > maxLines / VISITED_RECORD_LINES) {
+        m_visitedLocations.erase(m_visitedLocations.begin(),
+                                 m_visitedLocations.end() - maxLines / VISITED_RECORD_LINES);
     }
 
     std::ofstream out(GetVisitedFilePath(), std::ios::trunc);
@@ -188,20 +186,20 @@ static std::vector<PlacerLocation> LoadLocations(const std::string& path) {
 }
 
 void Placer::ReloadSavedPositions() {
-    m_randomPositions = LoadLocations(GetPositionsFilePath());
-    m_visitedPositions = LoadLocations(GetVisitedFilePath());
-    gz::Log("Placer: loaded %zu saved positions, %zu visited", m_randomPositions.size(), m_visitedPositions.size());
+    m_randomLocations  = LoadLocations(GetPositionsFilePath());
+    m_visitedLocations = LoadLocations(GetVisitedFilePath());
+    gz::Log("Placer: loaded %zu saved positions, %zu visited", m_randomLocations.size(), m_visitedLocations.size());
 }
 
 bool Placer::IsVisited(const PlacerLocation& location) {
-    return std::any_of(m_visitedPositions.begin(), m_visitedPositions.end(), [&location](const PlacerLocation& visited) {
+    return std::any_of(m_visitedLocations.begin(), m_visitedLocations.end(), [&location](const PlacerLocation& visited) {
         return visited.position.x == location.position.x && visited.position.y == location.position.y
             && visited.position.z == location.position.z;
     });
 }
 
 void Placer::SavePosition(CVector3f position, CVector3f aimPosition) {
-    m_randomPositions.push_back({ position, aimPosition, {} });
+    m_randomLocations.push_back({ position, aimPosition, {} });
     std::ofstream file(GetPositionsFilePath(), std::ios::app);
     if (file) {
         file << std::setprecision(9) << position.x << ' ' << position.y << ' ' << position.z
@@ -210,11 +208,18 @@ void Placer::SavePosition(CVector3f position, CVector3f aimPosition) {
         gz::Log("Placer: failed to write position %s", GetPositionsFilePath().c_str());
     }
     gz::Log("Placer: saved position %.1f, %.1f, %.1f (%zu total)",
-        position.x, position.y, position.z, m_randomPositions.size());
+        position.x, position.y, position.z,
+            m_randomLocations.size());
 }
 
 std::optional<PlacerLocation> Placer::RandomizePosition(std::vector<PlacerLocation> positions) {
-    auto nextPosition = ChooseWeightedLocation(positions);
+    std::vector<PlacerLocation> locs;
+    if (positions.empty()) {
+        locs = GetUnvisitedLocations();
+    } else {
+        locs = positions;
+    }
+    auto nextPosition = ChooseWeightedLocation(locs);
     if (!nextPosition) {
         gz::Log("Placer: no saved positions to randomize");
         return std::nullopt;
@@ -339,12 +344,24 @@ const PlacerLocation* Placer::ChooseWeightedLocation(const std::vector<PlacerLoc
         return nullptr;
     }
     std::vector<float> weights(locations.size(), 1.0f);
-    if (!m_visitedPositions.empty()) {
-        const CVector3f& last = m_visitedPositions.back().position;
+    if (!m_visitedLocations.empty()) {
+        const CVector3f& last = m_visitedLocations.back().position;
         std::transform(locations.begin(), locations.end(), weights.begin(), [&last](const PlacerLocation& location) {
             return LocationWeight(HorizontalDistance(location.position, last));
         });
     }
     std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
     return &locations[dist(Rng())];
+}
+
+// Available locations that were not visited yet; once everything was visited all locations are allowed again
+std::vector<PlacerLocation> Placer::GetUnvisitedLocations() {
+    std::vector<PlacerLocation> candidates{};
+    std::copy_if(Placer::m_randomLocations.begin(), Placer::m_randomLocations.end(),
+                 std::back_inserter(candidates), [](const PlacerLocation& pos) { return !Placer::IsVisited(pos); });
+    return candidates.empty() ? Placer::m_randomLocations : candidates;
+}
+const PlacerLocation* Placer::GetRandomExtractionPoint()
+{
+    return ChooseWeightedLocation(m_extractionPoints);
 }

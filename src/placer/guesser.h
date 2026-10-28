@@ -28,7 +28,7 @@ class GuesserGameMode
     // Scores the user's map marker against the target; false if the round is already guessed or no marker is placed
     bool Guess();
     // Teleports the player back to the target of the current round
-    void ResetToTarget();
+    void ResetToTarget() const;
     void AdvanceToNextRound();
     void Start();
 
