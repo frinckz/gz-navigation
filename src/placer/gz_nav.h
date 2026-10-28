@@ -27,6 +27,7 @@ struct gz_nav_settings {
     GzNavGameMode mode;
     bool showCompass = true;
     bool showTime = true;
+    bool showCrosshair = true;
 };
 
 inline gz_nav_settings g_gzNavSettings{};
@@ -72,6 +73,8 @@ inline void init_gz_nav() {
                 settings.showCompass = atoi(value.c_str()) != 0;
             } else if (key == "show-time") {
                 settings.showTime = atoi(value.c_str()) != 0;
+            } else if (key == "show-crosshair") {
+                settings.showCrosshair = atoi(value.c_str()) != 0;
             }
         } else {
             gz::Log("GZ_NAV: ignoring invalid line %zu in %s", lineNumber, GetSettingsPath().c_str());

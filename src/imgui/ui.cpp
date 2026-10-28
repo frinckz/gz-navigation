@@ -139,6 +139,7 @@ void UI::Render()
     if (GameState::IsInGame() && !CMap::IsOpen()) {
         RenderCompass();
         RenderTime();
+        RenderCrosshair();
     }
 
     if (!GameState::IsInGame() || !CMap::IsOpen()) {
@@ -346,6 +347,26 @@ void UI::RenderTime()
     const ImVec2 textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text);
     const ImVec2 pos(std::round(display.x - 20.0f * scale - textSize.x), std::round(14.0f * scale));
     ImGui::GetBackgroundDrawList()->AddText(font, fontSize, pos, IM_COL32(205, 205, 205, 255), text);
+}
+
+// small filled circle in the center of the screen, a fixed point to look at against motion sickness
+void UI::RenderCrosshair()
+{
+    if (!g_gzNavSettings.showCrosshair) {
+        return;
+    }
+
+    const ImVec2 display = ImGui::GetIO().DisplaySize;
+    if (display.x <= 0.0f || display.y <= 0.0f) {
+        return;
+    }
+
+    const float scale = display.y / 1080.0f;
+    const ImVec2 center(std::round(display.x * 0.5f), std::round(display.y * 0.5f));
+    const float radius = 2.0f * scale; // 4 px diameter
+    ImDrawList* dl = ImGui::GetBackgroundDrawList();
+
+    dl->AddCircleFilled(center, radius, IM_COL32(205, 205, 205, 220));
 }
 
 // borderless layer without background, only the widgets are visible
