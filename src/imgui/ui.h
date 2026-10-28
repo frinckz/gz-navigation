@@ -34,6 +34,7 @@ namespace gz
         void RenderGuessResult();
         void RenderGuessOverlay();
         void RenderCompass();
+        void RenderTime();
     };
 
 } // namespace gz

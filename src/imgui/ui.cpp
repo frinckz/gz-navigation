@@ -11,6 +11,7 @@
 #include "game/input_manager.h"
 #include "game/map.h"
 #include "game/ui_static_handler.h"
+#include "game/world_time.h"
 #include "placer/guesser.h"
 #include "placer/gz_nav.h"
 
@@ -137,6 +138,7 @@ void UI::Render()
 
     if (GameState::IsInGame() && !CMap::IsOpen()) {
         RenderCompass();
+        RenderTime();
     }
 
     if (!GameState::IsInGame() || !CMap::IsOpen()) {
@@ -308,6 +310,42 @@ void UI::RenderCompass()
 
     // current heading
     dl->AddLine(ImVec2(centerX, bandMin.y), ImVec2(centerX, bandMax.y), IM_COL32(205, 205, 205, 200), 1.5f * scale);
+}
+
+// in-game time of day at the top right corner, formatted like the system clock (12h / 24h), no background
+void UI::RenderTime()
+{
+    if (!g_gzNavSettings.showTime) {
+        return;
+    }
+
+    const ImVec2 display = ImGui::GetIO().DisplaySize;
+    if (display.x <= 0.0f || display.y <= 0.0f) {
+        return; // minimized / tabbed out: a zero font size trips an ImGui assert
+    }
+
+    auto* worldTime = CWorldTime::instance();
+    if (!worldTime) {
+        return;
+    }
+    int hours = 0;
+    int minutes = 0;
+    worldTime->GetTimeAsHHMM(hours, minutes);
+
+    SYSTEMTIME time{};
+    time.wHour = static_cast<WORD>(hours);
+    time.wMinute = static_cast<WORD>(minutes);
+    char text[32];
+    if (GetTimeFormatA(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &time, nullptr, text, sizeof(text)) == 0) {
+        return;
+    }
+
+    const float scale = display.y / 1080.0f;
+    ImFont* font = ImGui::GetFont();
+    const float fontSize = ImGui::GetFontSize() * scale * 1.4f;
+    const ImVec2 textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text);
+    const ImVec2 pos(std::round(display.x - 20.0f * scale - textSize.x), std::round(14.0f * scale));
+    ImGui::GetBackgroundDrawList()->AddText(font, fontSize, pos, IM_COL32(205, 205, 205, 255), text);
 }
 
 // borderless layer without background, only the widgets are visible
