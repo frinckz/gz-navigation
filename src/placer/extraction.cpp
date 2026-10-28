@@ -3,13 +3,6 @@
 #include "extraction.h"
 #include "placer.h"
 
-ExtractionGameMode* ExtractionGameMode::instance() {
-    if (!sm_instance) {
-        sm_instance = new ExtractionGameMode();
-    }
-    return sm_instance;
-}
-
 void ExtractionGameMode::Start(long long timeLimitInMinutes) {
     m_timeLimitInMinutes = timeLimitInMinutes;
     if (auto placed = Placer::instance()->Place()) {

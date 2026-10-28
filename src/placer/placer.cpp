@@ -358,7 +358,7 @@ const PlacerLocation* Placer::ChooseWeightedLocation(const std::vector<PlacerLoc
 std::vector<PlacerLocation> Placer::GetUnvisitedLocations() {
     std::vector<PlacerLocation> candidates{};
     std::copy_if(Placer::m_randomLocations.begin(), Placer::m_randomLocations.end(),
-                 std::back_inserter(candidates), [](const PlacerLocation& pos) { return !Placer::IsVisited(pos); });
+                 std::back_inserter(candidates), [this](const PlacerLocation& pos) { return !Placer::IsVisited(pos); });
     return candidates.empty() ? Placer::m_randomLocations : candidates;
 }
 const PlacerLocation* Placer::GetRandomExtractionPoint()

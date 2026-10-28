@@ -17,7 +17,10 @@ class ExtractionGameMode {
     static ExtractionGameMode* sm_instance;
     ExtractionGameMode() = default;
   public:
-    static ExtractionGameMode* instance();
+    static ExtractionGameMode* instance() {
+        static ExtractionGameMode instance;
+        return &instance;
+    }
     void Start(long long timeLimitInMinutes);
     void Update();
 };
