@@ -33,6 +33,7 @@ namespace gz
         void RenderGuesserControls();
         void RenderGuessResult();
         void RenderGuessOverlay();
+        void RenderCompass();
     };
 
 } // namespace gz

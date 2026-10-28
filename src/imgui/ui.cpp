@@ -2,12 +2,15 @@
 #include "log.h"
 
 #include <algorithm>
+#include <cmath>
 #include <imgui.h>
 #include "imgui_internal.h"
+#include "game/camera_manager.h"
 #include "game/custom/tp_state.h"
 #include "game/game_state.h"
 #include "game/input_manager.h"
 #include "game/map.h"
+#include "game/ui_static_handler.h"
 #include "placer/guesser.h"
 #include "placer/gz_nav.h"
 
@@ -132,6 +135,10 @@ void UI::Render()
         Log("UI: map state changed to %u", s_lastMapState);
     }
 
+    if (GameState::IsInGame() && !CMap::IsOpen()) {
+        RenderCompass();
+    }
+
     if (!GameState::IsInGame() || !CMap::IsOpen()) {
         return;
     }
@@ -215,6 +222,92 @@ void UI::RenderGuessOverlay()
     dl->AddCircleFilled(markerPos, 6.0f, IM_COL32(255, 255, 255, 255));
 
     DrawTargetIcon(dl, targetPos, 28.0f, IM_COL32(60, 220, 90, 255));
+}
+
+// Heading of the render camera in degrees, 0 = north, clockwise. North is -z (the map y axis is z / 32 and grows
+// southwards). The camera looks along its transform's -z axis (verified in-game: +z gave a heading
+// that was off by 180 degrees).
+static bool GetCameraHeading(float& headingDeg)
+{
+    static constexpr float CAMERA_FORWARD_SIGN = -1.0f;
+
+    const auto* manager = CCameraManager::instance();
+    if (!manager || !manager->m_RenderCamera) {
+        return false;
+    }
+    const CVector4f& forward = manager->m_RenderCamera->m_TransformF.m[2];
+    const float fx = forward.x * CAMERA_FORWARD_SIGN;
+    const float fz = forward.z * CAMERA_FORWARD_SIGN;
+    if (fx * fx + fz * fz < 1e-6f) {
+        return false;
+    }
+    headingDeg = std::atan2(fx, -fz) * (180.0f / IM_PI);
+    return true;
+}
+
+// Replacement for the game's compass strip (it disappears with the hidden HUD): heading band at the top center,
+// without markers. Drawn only while the HUD is hidden, otherwise the game's own compass is visible.
+void UI::RenderCompass()
+{
+    float heading = 0.0f;
+    if (!g_gzNavSettings.showCompass || !g_hideHud || !GetCameraHeading(heading)) {
+        return;
+    }
+
+    static constexpr const char* DIRECTIONS[] = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+    static constexpr float VISIBLE_SPAN = 300.0f; // degrees across the band
+
+    const ImVec2 display = ImGui::GetIO().DisplaySize;
+    if (display.x <= 0.0f || display.y <= 0.0f) {
+        return; // minimized / tabbed out: a zero font size trips an ImGui assert
+    }
+    const float scale = display.y / 1080.0f;
+    const float width = display.x * 0.3f;
+    const float height = 26.0f * scale;
+    const float top = 14.0f * scale;
+    const float centerX = display.x * 0.5f;
+    const float pixelsPerDeg = width / VISIBLE_SPAN;
+    const ImVec2 bandMin(centerX - width * 0.5f, top);
+    const ImVec2 bandMax(centerX + width * 0.5f, top + height);
+
+    ImDrawList* dl = ImGui::GetBackgroundDrawList();
+    // background fades out towards both ends
+    const ImU32 bandColor = IM_COL32(0, 0, 0, 45);
+    const ImU32 bandClear = IM_COL32(0, 0, 0, 0);
+    dl->AddRectFilledMultiColor(bandMin, ImVec2(centerX, bandMax.y), bandClear, bandColor, bandColor, bandClear);
+    dl->AddRectFilledMultiColor(ImVec2(centerX, bandMin.y), bandMax, bandColor, bandClear, bandClear, bandColor);
+    dl->PushClipRect(bandMin, bandMax, true);
+
+    ImFont* font = ImGui::GetFont();
+    const float baseFontSize = ImGui::GetFontSize() * scale * 1.2f;
+
+    // The band scrolls in whole pixels and the labels keep a fixed rounded spacing, so they move in lockstep. Placing
+    // each label at heading * pixelsPerDeg directly makes labels near a pixel boundary flip between two positions.
+    const float scrollPx = std::round(heading * pixelsPerDeg);
+
+    // one label every 45 degrees
+    const int firstStep = static_cast<int>(std::floor((heading - VISIBLE_SPAN * 0.5f) / 45.0f));
+    const int lastStep = static_cast<int>(std::ceil((heading + VISIBLE_SPAN * 0.5f) / 45.0f));
+    for (int step = firstStep; step <= lastStep; ++step) {
+        const float x = std::round(centerX + step * 45.0f * pixelsPerDeg - scrollPx);
+
+        // fade out towards the edges of the band
+        const float edge = 1.0f - std::fabs(x - centerX) / (width * 0.5f);
+        const float linearFade = std::clamp(edge * 1.5f, 0.0f, 1.0f);
+        const float fade = linearFade * linearFade;
+
+        const int index = (step % 8 + 8) % 8;
+        const bool cardinal = index % 2 == 0;
+        const float fontSize = cardinal ? baseFontSize * 1.15f : baseFontSize * 0.85f;
+        const ImU32 color = IM_COL32(205, 205, 205, static_cast<int>((cardinal ? 255 : 150) * fade));
+        const ImVec2 textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, DIRECTIONS[index]);
+        dl->AddText(font, fontSize, ImVec2(std::round(x - textSize.x * 0.5f), std::round(top + (height - textSize.y) * 0.5f)), color,
+                    DIRECTIONS[index]);
+    }
+    dl->PopClipRect();
+
+    // current heading
+    dl->AddLine(ImVec2(centerX, bandMin.y), ImVec2(centerX, bandMax.y), IM_COL32(205, 205, 205, 200), 1.5f * scale);
 }
 
 // borderless layer without background, only the widgets are visible

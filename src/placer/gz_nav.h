@@ -25,6 +25,7 @@ enum class GzNavGameMode {
 
 struct gz_nav_settings {
     GzNavGameMode mode;
+    bool showCompass = true;
 };
 
 inline gz_nav_settings g_gzNavSettings{};
@@ -66,6 +67,8 @@ inline void init_gz_nav() {
                         break;
                     }
                 }
+            } else if (key == "show-compass") {
+                settings.showCompass = atoi(value.c_str()) != 0;
             }
         } else {
             gz::Log("GZ_NAV: ignoring invalid line %zu in %s", lineNumber, GetSettingsPath().c_str());
