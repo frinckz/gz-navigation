@@ -91,6 +91,8 @@ inline void update_gz_nav() {
         if (character->IsDetectable()) {
             character->SetDetectable(false);
         }
+    } else if (g_gzNavSettings.mode == GzNavGameMode::Extraction) {
+        // TODO: implement update
     }
 
     if (g_gzNavStarted) {
