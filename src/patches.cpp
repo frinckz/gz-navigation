@@ -29,6 +29,7 @@
 #include "game/ui_static_handler.h"
 #include "game/weather.h"
 #include "game/custom/damage_multipliers.h"
+#include "game/custom/no_enemies.h"
 #include "game/custom/vehicle_speed.h"
 #include "game/custom/weapon_consumption.h"
 #include "patches/resource_patch.h"
@@ -164,6 +165,9 @@ bool InitPatchesAndHooks()
 
         if (!Weather::SetupWeatherHooks())
             Log("Failed to setup weather hooks");
+
+        if (!NoEnemies::SetupSpawnAnimalHook())
+            Log("Failed to setup SpawnAnimal hook");
 
         if (!AmmoDeployableConsumption::SetupAmmoHook())
             Log("Failed to setup Ammo Consumption hook");

@@ -4,6 +4,7 @@
 #include "animal_population.h"
 #include "log.h"
 #include "map.h"
+#include "custom/no_enemies.h"
 
 #pragma pack(push, 1)
 namespace gz
@@ -58,6 +59,7 @@ namespace gz
                 return nullptr;
             }
             CAnimal* animal = groupAnimals[0];
+            NoEnemies::RegisterModSpawn(animal); // lets it pass the no-enemies spawn block
 
             // 0x02 = "do not save" (prevents machine from being written into save & being chosen as rival)
             animal->m_Flags = (std::byte)((uint8_t)animal->m_Flags | 0x02);
